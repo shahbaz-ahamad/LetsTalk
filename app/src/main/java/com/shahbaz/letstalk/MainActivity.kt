@@ -20,20 +20,8 @@ class MainActivity : AppCompatActivity() {
         binding= ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val currentuser = viewmodel.currentUser
-        binding.apply {
-            if(currentuser?.photoUrl != null){
-                Glide
-                    .with(this@MainActivity)
-                    .load(currentuser?.photoUrl)
-                    .into(imageView)
 
-                name.text=currentuser?.displayName
-            }else{
-                imageView.setImageResource(R.drawable.profile)
-                name.text=currentuser?.displayName
-            }
-        }
+
     }
 
 }
