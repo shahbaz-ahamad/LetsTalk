@@ -1,6 +1,7 @@
 package com.shahbaz.letstalk.repositiory
 
 import android.net.Uri
+import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.userProfileChangeRequest
 import com.google.firebase.database.FirebaseDatabase
@@ -27,7 +28,9 @@ class ProfileRepo @Inject constructor(
             firebaseAuth.currentUser
 
     fun AddUserDataToFirebase(name: String, selectedImageUri: Uri?) {
-        _userUpdateStatus.value=UserProfileSetupState.Loading
+
+        Log.d("uid", currentUser?.uid.toString())
+        _userUpdateStatus.value = UserProfileSetupState.Loading
         if (selectedImageUri != null) {
             val imageName = currentUser?.uid + name
             val imagereference = firebaseStorage.reference.child("ProfileImage/$imageName")
@@ -36,51 +39,85 @@ class ProfileRepo @Inject constructor(
                     imagereference.downloadUrl.addOnSuccessListener { uri ->
                         val imageUrl = uri
                         //store the user profile now
+
                         currentUser?.let {
-                            userProfileChangeRequest {
-                                displayName= name
-                                photoUri=imageUrl
+                            val profile = userProfileChangeRequest {
+                                displayName = name
+                                photoUri = imageUrl
                             }
-                           currentUser?.let {
-                               val id = currentUser!!.uid
-                               val userProfile = UserProfile(id,name,imageUrl.toString(),currentUser!!.phoneNumber.toString())
-                               AddUserToRealtimeDatabase(userProfile)
-                           }
+
+                            it.updateProfile(profile)
+                                .addOnCompleteListener {
+                                    if (it.isSuccessful) {
+                                        val id = currentUser!!.uid
+                                        val userProfile = UserProfile(
+                                            id,
+                                            name,
+                                            imageUrl.toString(),
+                                            currentUser!!.phoneNumber.toString()
+                                        )
+                                        AddUserToRealtimeDatabase(userProfile)
+                                    } else {
+                                        _userUpdateStatus.value =
+                                            UserProfileSetupState.Error("failed to update")
+
+                                    }
+                                }
                         }
+
+
                     }
                         .addOnFailureListener {
                             //failed to dowload image url
-                            _userUpdateStatus.value=UserProfileSetupState.Error(it.localizedMessage)
+                            _userUpdateStatus.value =
+                                UserProfileSetupState.Error(it.localizedMessage)
                         }
                 }
                 .addOnFailureListener {
                     //failed to upload image
-                    _userUpdateStatus.value=UserProfileSetupState.Error(it.localizedMessage)
+                    _userUpdateStatus.value = UserProfileSetupState.Error(it.localizedMessage)
                 }
-        }else{
+        } else {
             //store the user profile now
             currentUser?.let {
-                val id = currentUser!!.uid
-                val userProfile = UserProfile(id,name,"",currentUser!!.phoneNumber.toString())
-                AddUserToRealtimeDatabase(userProfile)
+                val profile = userProfileChangeRequest {
+                    displayName = name
+                }
+                it.updateProfile(profile)
+                    .addOnCompleteListener {
+                        if (it.isSuccessful) {
+                            val id = currentUser!!.uid
+                            val userProfile = UserProfile(
+                                id,
+                                name,
+                                "",
+                                currentUser!!.phoneNumber.toString()
+                            )
+                            AddUserToRealtimeDatabase(userProfile)
+                        } else {
+                            _userUpdateStatus.value =
+                                UserProfileSetupState.Error("failed to update")
+
+                        }
+                    }
             }
         }
     }
 
 
-
-    fun AddUserToRealtimeDatabase(userProfile: UserProfile){
+    fun AddUserToRealtimeDatabase(userProfile: UserProfile) {
         val storageRef = currentUser?.let {
             firebaseDatabase.reference.child("User_Profile").child(
-                it.uid)
+                it.uid
+            )
         }
 
         storageRef?.setValue(userProfile)
             ?.addOnSuccessListener {
-                _userUpdateStatus.value=UserProfileSetupState.Success(userProfile)
+                _userUpdateStatus.value = UserProfileSetupState.Success(userProfile)
             }
             ?.addOnFailureListener {
-                _userUpdateStatus.value=UserProfileSetupState.Error(it.localizedMessage)
+                _userUpdateStatus.value = UserProfileSetupState.Error(it.localizedMessage)
             }
     }
 }
