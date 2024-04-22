@@ -1,5 +1,6 @@
 package com.shahbaz.letstalk.fragment
 
+import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -8,21 +9,42 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
+import com.shahbaz.letstalk.MainActivity
 import com.shahbaz.letstalk.R
 import com.shahbaz.letstalk.databinding.FragmentOTPBinding
+import com.shahbaz.letstalk.sealedclass.PhoneAuthState
+import com.shahbaz.letstalk.viewmodel.AuthViewmodel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 
 
 @AndroidEntryPoint
 class OTPFragment : Fragment() {
     private lateinit var binding: FragmentOTPBinding
+    private val viewmodel by viewModels<AuthViewmodel>()
     private var OTP: String? = null
+    private var phoneNumber:String=""
+
 
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupEditTextListeners()
+        binding.tvNumber.text="Enter the OTP Sent to "+phoneNumber
+        binding.buttonLogin.setOnClickListener {
 
+            if(OTP != null && OTP?.length == 6){
+                Log.d("12",OTP.toString())
+                Log.d("1","w")
+                viewmodel.verifyCode(OTP!!)
+            }else{
+                Toast.makeText(requireContext(),"Please Enter OTP",Toast.LENGTH_SHORT).show()
+            }
+        }
     }
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -33,6 +55,34 @@ class OTPFragment : Fragment() {
         return binding.root
     }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        arguments?.let{
+            phoneNumber=it.getString("phoneNumber","")
+        }
+
+        lifecycleScope.launchWhenStarted {
+            viewmodel.verificationState.collectLatest {
+
+                when(it){
+                    is PhoneAuthState.VerificationInProgress ->{
+                        binding.progressBar.visibility=View.VISIBLE
+                    }
+
+                    is PhoneAuthState.SignedInSuccess ->{
+                        binding.progressBar.visibility=View.INVISIBLE
+                        findNavController().navigate(R.id.action_OTPFragment_to_profileFragment)
+                    }
+                    is PhoneAuthState.InvalidCode ->{
+                        binding.progressBar.visibility=View.INVISIBLE
+                        Toast.makeText(requireContext(),"Please Enter Valid Code",Toast.LENGTH_LONG).show()
+                    }
+                    else -> Unit
+                }
+            }
+        }
+    }
     private fun setupEditTextListeners() {
         binding.apply {
             etOtp1.addTextChangedListener(createTextWatcher(etOtp1, etOtp2))

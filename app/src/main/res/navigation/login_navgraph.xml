@@ -9,7 +9,14 @@
         android:id="@+id/OTPFragment"
         android:name="com.shahbaz.letstalk.fragment.OTPFragment"
         android:label="fragment_o_t_p"
-        tools:layout="@layout/fragment_o_t_p" />
+        tools:layout="@layout/fragment_o_t_p" >
+        <argument
+            android:name="phoneNumber"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_OTPFragment_to_profileFragment"
+            app:destination="@id/profileFragment" />
+    </fragment>
     <fragment
         android:id="@+id/loginFragment"
         android:name="com.shahbaz.letstalk.fragment.LoginFragment"
@@ -19,4 +26,9 @@
             android:id="@+id/action_loginFragment_to_OTPFragment"
             app:destination="@id/OTPFragment" />
     </fragment>
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.shahbaz.letstalk.fragment.ProfileFragment"
+        android:label="fragment_profile"
+        tools:layout="@layout/fragment_profile" />
 </navigation>

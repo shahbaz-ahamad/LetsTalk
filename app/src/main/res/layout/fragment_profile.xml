@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    tools:context=".fragment.OTPFragment">
+    tools:context=".fragment.ProfileFragment">
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:id="@+id/linearLayoutCompat"
@@ -14,7 +14,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
 
     <TextView
         android:id="@+id/txtView"
@@ -28,7 +27,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
 
     <androidx.cardview.widget.CardView
         android:layout_width="180dp"
@@ -59,7 +57,7 @@
     <androidx.cardview.widget.CardView
         android:id="@+id/cardView"
         android:layout_width="match_parent"
-        android:layout_height="400dp"
+        android:layout_height="wrap_content"
         android:layout_marginStart="30dp"
         android:layout_marginTop="50dp"
         android:layout_marginEnd="30dp"
@@ -76,106 +74,51 @@
 
 
             <TextView
-                android:id="@+id/tvNumber"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:layout_marginTop="50dp"
-                android:gravity="center"
-                android:text="Enter the OTP Sent to +919545246568"
-                android:textSize="20dp"
-                android:layout_marginStart="20dp"
-                android:layout_marginEnd="20dp"
+                android:text="Let's Build Profile"
+                android:textSize="30dp"
                 android:textStyle="bold" />
 
-            <androidx.appcompat.widget.LinearLayoutCompat
+            <de.hdodenhof.circleimageview.CircleImageView
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                android:id="@+id/profile_image"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:src="@drawable/profile"
+                app:civ_border_width="2dp"
+                app:civ_border_color="@color/primary"
+                android:layout_gravity="center"
+                android:layout_marginTop="10dp"/>
+
+            <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="20dp"
-                android:padding="10dp">
+                app:boxStrokeColor="@color/primary"
+                app:hintTextColor="@color/primary">
 
-
-                <EditText
-                    android:id="@+id/et_otp1"
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_Name"
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:background="@drawable/otp_et_background"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="5dp"
-                    android:maxLength="1"
-                    android:inputType="number"
-                    android:gravity="center"
-                    android:imeOptions="actionNext"
+                    android:layout_height="match_parent"
+                    android:hint="Enter Name"
+                    android:inputType="textPersonName"
+                    android:drawableStart="@drawable/profile"
+                    android:drawablePadding="10dp"
+                    android:maxLines="1"
                     />
+            </com.google.android.material.textfield.TextInputLayout>
 
-
-                <EditText
-                    android:id="@+id/et_otp2"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:background="@drawable/otp_et_background"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="5dp"
-                    android:maxLength="1"
-                    android:gravity="center"
-                    android:inputType="number"
-                    android:imeOptions="actionNext"/>
-
-                <EditText
-                    android:id="@+id/et_otp3"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:background="@drawable/otp_et_background"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="5dp"
-                    android:gravity="center"
-                    android:maxLength="1"
-                    android:inputType="number"
-                    android:imeOptions="actionNext"/>
-
-                <EditText
-                    android:id="@+id/et_otp4"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:background="@drawable/otp_et_background"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="5dp"
-                    android:gravity="center"
-                    android:inputType="number"
-                    android:maxLength="1"
-                    android:imeOptions="actionNext"/>
-
-                <EditText
-                    android:id="@+id/et_otp5"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:background="@drawable/otp_et_background"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="5dp"
-                    android:gravity="center"
-                    android:maxLength="1"
-                    android:inputType="number"
-                    android:imeOptions="actionNext"/>
-
-                <EditText
-                    android:id="@+id/et_otp6"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:background="@drawable/otp_et_background"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:maxLength="1"
-                    android:inputType="number"
-                    android:imeOptions="actionDone"/>
-
-            </androidx.appcompat.widget.LinearLayoutCompat>
 
             <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/buttonLogin"
+                android:id="@+id/buttonSave"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/button_background"
-                android:text="Login"
+                android:text="Save"
                 android:textColor="@color/white"
                 android:textAllCaps="false"
                 android:textSize="30sp"

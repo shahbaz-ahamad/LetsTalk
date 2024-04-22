@@ -135,6 +135,17 @@
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminateTint="@color/primary"
+            android:layout_gravity="center"
+            android:visibility="invisible"
+            />
     </androidx.cardview.widget.CardView>
+
+
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>
