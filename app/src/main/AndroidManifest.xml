@@ -41,7 +41,8 @@
         <activity
             android:name=".MainActivity"
             android:theme="@style/StatusBarMainActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"/>
 
     </application>
 

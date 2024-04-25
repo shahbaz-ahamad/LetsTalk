@@ -13,7 +13,11 @@
         <action
             android:id="@+id/action_chatFragment_to_contactFragment"
             app:destination="@id/contactFragment" />
+        <action
+            android:id="@+id/action_chatFragment_to_chatRoomFragment"
+            app:destination="@id/chatRoomFragment" />
     </fragment>
+
     <fragment
         android:id="@+id/storiesFragment"
         android:name="com.shahbaz.letstalk.fragment.StoriesFragment"
@@ -23,5 +27,18 @@
         android:id="@+id/contactFragment"
         android:name="com.shahbaz.letstalk.fragment.ContactFragment"
         android:label="fragment_contact"
-        tools:layout="@layout/fragment_contact" />
+        tools:layout="@layout/fragment_contact" >
+        <action
+            android:id="@+id/action_contactFragment_to_chatRoomFragment"
+            app:destination="@id/chatRoomFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/chatRoomFragment"
+        android:name="com.shahbaz.letstalk.fragment.ChatRoomFragment"
+        android:label="fragment_chat_room"
+        tools:layout="@layout/fragment_chat_room" >
+        <argument
+            android:name="userProfile"
+            app:argType="com.shahbaz.letstalk.datamodel.UserProfile" />
+    </fragment>
 </navigation>

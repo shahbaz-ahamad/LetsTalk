@@ -31,7 +31,7 @@ class ContactRepositiory @Inject constructor(
     val unRegisterContactState= _unRegisterContactState.asStateFlow()
 
 
-    val unRegisteredContact = mutableListOf<UnregisteredUser>()
+    var unRegisteredContact = mutableListOf<UnregisteredUser>()
     fun fetchContact(): MutableMap<String, String> {
         val contactList = mutableMapOf<String, String>()
         val cursor: Cursor? = context.contentResolver.query(
@@ -56,6 +56,7 @@ class ContactRepositiory @Inject constructor(
 
 
     fun fetchRegisterUser(contactList: MutableMap<String, String>) {
+        unRegisteredContact= mutableListOf<UnregisteredUser>()
         _registerContactsState.value = Resources.Loading()
         val userList = mutableListOf<UserProfile>()
         val normalizedContactList = contactList.mapValues { it.value.replace("\\s+".toRegex(), "") }

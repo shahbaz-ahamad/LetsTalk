@@ -9,24 +9,28 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.shahbaz.letstalk.R
 import com.shahbaz.letstalk.adapter.NotRegisterContactListAdapter
 import com.shahbaz.letstalk.adapter.RegisterContactListAdapter
 import com.shahbaz.letstalk.databinding.FragmentContactBinding
 import com.shahbaz.letstalk.datamodel.UnregisteredUser
+import com.shahbaz.letstalk.datamodel.UserProfile
+import com.shahbaz.letstalk.helper.hideBottomNavigation
 import com.shahbaz.letstalk.sealedclass.Resources
 import com.shahbaz.letstalk.viewmodel.ContactViewmodel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 
 @AndroidEntryPoint
-class ContactFragment : Fragment() {
+class ContactFragment : Fragment(),RegisterContactListAdapter.OnItemClickListener {
 
     private lateinit var binding: FragmentContactBinding
     private val viewmodel by viewModels<ContactViewmodel>()
     private val registerContactListAdapter :RegisterContactListAdapter by lazy {
-        RegisterContactListAdapter(requireContext())
+        RegisterContactListAdapter(requireContext(),this)
     }
 
     private val notRegisterContactListAdapter :NotRegisterContactListAdapter by lazy {
@@ -46,9 +50,14 @@ class ContactFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        hideBottomNavigation()
         val contact = viewmodel.FetchContact()
         viewmodel.FetchRegisterUser(contact)
         SetupRecyclerView()
+
+        binding.backButton.setOnClickListener {
+            findNavController().navigateUp()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -96,10 +105,16 @@ class ContactFragment : Fragment() {
             layoutManager=LinearLayoutManager(requireContext(),RecyclerView.VERTICAL,false)
             adapter=registerContactListAdapter
         }
-
         binding.recyclerviewContactNotOnLetsTalk.apply {
             layoutManager=LinearLayoutManager(requireContext(),RecyclerView.VERTICAL,false)
             adapter=notRegisterContactListAdapter
         }
+    }
+
+    //to perfrom onCLick on the contact to go chatroom fragement
+    override fun onItemClick(registerUser: UserProfile) {
+        val action =ContactFragmentDirections.actionContactFragmentToChatRoomFragment(registerUser)
+        findNavController().navigate(action)
+
     }
 }

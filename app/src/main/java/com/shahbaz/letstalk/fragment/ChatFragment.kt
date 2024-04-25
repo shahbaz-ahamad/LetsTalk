@@ -8,12 +8,17 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
+import com.bumptech.glide.Glide
 import com.shahbaz.letstalk.R
 import com.shahbaz.letstalk.databinding.FragmentChatBinding
 import com.shahbaz.letstalk.databinding.FragmentStoriesBinding
+import com.shahbaz.letstalk.helper.showBottomNavigation
+import com.shahbaz.letstalk.viewmodel.AuthViewmodel
 import dagger.hilt.android.AndroidEntryPoint
 
 
@@ -22,6 +27,7 @@ class ChatFragment : Fragment() {
 
     private lateinit var binding:FragmentChatBinding
     private val READ_CONTACTS_PERMISSION_REQUEST = 101
+    private val viewmodel by viewModels<AuthViewmodel>()
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -34,6 +40,7 @@ class ChatFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        displayUserInfo()
         binding.addChat.setOnClickListener {
             requestContactsPermission()
         }
@@ -101,4 +108,29 @@ class ChatFragment : Fragment() {
         }
     }
 
+
+    private fun displayUserInfo() {
+
+        val currentUser = viewmodel.currentUser
+        binding.apply {
+
+            if(currentUser?.photoUrl != null){
+                Glide
+                    .with(requireContext())
+                    .load(currentUser?.photoUrl)
+                    .placeholder(R.drawable.profile)
+                    .into(profileImage)
+
+                name.text= currentUser?.displayName
+            }else{
+                profileImage.setImageResource(R.drawable.profile)
+                name.text=currentUser?.displayName
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        showBottomNavigation()
+    }
 }

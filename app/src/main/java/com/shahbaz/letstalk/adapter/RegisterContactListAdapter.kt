@@ -3,6 +3,7 @@ package com.shahbaz.letstalk.adapter
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.AdapterView.OnItemClickListener
 import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
@@ -11,7 +12,10 @@ import com.shahbaz.letstalk.R
 import com.shahbaz.letstalk.databinding.ContactListLayoutBinding
 import com.shahbaz.letstalk.datamodel.UserProfile
 
-class RegisterContactListAdapter(val context: Context) :
+class RegisterContactListAdapter(
+    val context: Context,
+    val clickListener : OnItemClickListener
+    ) :
     RecyclerView.Adapter<RegisterContactListAdapter.MyViewholder>() {
     inner class MyViewholder(val binding: ContactListLayoutBinding) :
         RecyclerView.ViewHolder(binding.root) {
@@ -29,6 +33,9 @@ class RegisterContactListAdapter(val context: Context) :
                     binding.profileImage.setImageResource(R.drawable.profile)
                     binding.name.text = currentContact.userName
                 }
+            }
+            itemView.setOnClickListener{
+              clickListener.onItemClick(currentContact!!)
             }
         }
     }
@@ -63,5 +70,9 @@ class RegisterContactListAdapter(val context: Context) :
         holder.bind(currentContact)
     }
 
+
+    interface OnItemClickListener{
+        fun onItemClick(registerUser: UserProfile)
+    }
 
 }
