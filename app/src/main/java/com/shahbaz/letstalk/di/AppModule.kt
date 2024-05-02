@@ -1,11 +1,16 @@
 package com.shahbaz.letstalk.di
 
+import android.content.Context
+import androidx.room.Room
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.storage.FirebaseStorage
+import com.shahbaz.letstalk.room.RoomDao
+import com.shahbaz.letstalk.room.RoomDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
@@ -31,4 +36,22 @@ object AppModule {
         return FirebaseStorage.getInstance()
     }
 
+    //for the room databse instance
+    @Singleton
+    @Provides
+    fun provideRoomDatabase(@ApplicationContext applicationContext:Context):RoomDatabase{
+        return Room.databaseBuilder(
+            applicationContext,
+            RoomDatabase::class.java,
+            "UserDatabase"
+        ).build()
+    }
+
+
+
+    //provide the instance of the dao
+    @Provides
+    fun provideDao(database: RoomDatabase):RoomDao{
+        return database.getDao()
+    }
 }

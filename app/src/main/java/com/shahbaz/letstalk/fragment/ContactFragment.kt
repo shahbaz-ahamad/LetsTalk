@@ -12,12 +12,14 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.auth.ktx.oAuthProvider
 import com.shahbaz.letstalk.R
 import com.shahbaz.letstalk.adapter.NotRegisterContactListAdapter
 import com.shahbaz.letstalk.adapter.RegisterContactListAdapter
 import com.shahbaz.letstalk.databinding.FragmentContactBinding
 import com.shahbaz.letstalk.datamodel.UnregisteredUser
 import com.shahbaz.letstalk.datamodel.UserProfile
+import com.shahbaz.letstalk.helper.CheckInternet
 import com.shahbaz.letstalk.helper.hideBottomNavigation
 import com.shahbaz.letstalk.sealedclass.Resources
 import com.shahbaz.letstalk.viewmodel.ContactViewmodel
@@ -26,18 +28,18 @@ import kotlinx.coroutines.flow.collectLatest
 
 @AndroidEntryPoint
 class ContactFragment : Fragment(),RegisterContactListAdapter.OnItemClickListener {
-
     private lateinit var binding: FragmentContactBinding
     private val viewmodel by viewModels<ContactViewmodel>()
+
+
     private val registerContactListAdapter :RegisterContactListAdapter by lazy {
-        RegisterContactListAdapter(requireContext(),this)
+        RegisterContactListAdapter(requireContext(),this,viewmodel.currentUser?.uid.toString())
     }
+
 
     private val notRegisterContactListAdapter :NotRegisterContactListAdapter by lazy {
         NotRegisterContactListAdapter(requireContext())
     }
-
-
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -51,10 +53,18 @@ class ContactFragment : Fragment(),RegisterContactListAdapter.OnItemClickListene
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         hideBottomNavigation()
-        val contact = viewmodel.FetchContact()
-        viewmodel.FetchRegisterUser(contact)
-        SetupRecyclerView()
+        viewmodel.FetchRegisterUserFromRooDatabase()
+        //viewmodel.FetchUnregisterContactFromRoomDatabase()
 
+        val contact = viewmodel.FetchContact()
+
+        if(CheckInternet.isInternetAvailable(requireContext())){
+            viewmodel.FetchRegisterUser(contact)
+        }else{
+           viewmodel.FetchRegisterUserFromRooDatabase()
+        }
+
+        SetupRecyclerView()
         binding.backButton.setOnClickListener {
             findNavController().navigateUp()
         }
@@ -62,6 +72,8 @@ class ContactFragment : Fragment(),RegisterContactListAdapter.OnItemClickListene
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+
         lifecycleScope.launchWhenStarted {
             viewmodel.registerContactsState.collectLatest {
                 when(it){
@@ -95,6 +107,24 @@ class ContactFragment : Fragment(),RegisterContactListAdapter.OnItemClickListene
                         Toast.makeText(requireContext(),"Failed to Fetch UnRegister Contact",Toast.LENGTH_SHORT).show()
                     }else ->Unit
                 }
+
+            }
+        }
+
+        //observe roomdatabaseContact
+        lifecycleScope.launchWhenStarted {
+            viewmodel.registerContactsFromRoomState.collectLatest {
+                when(it){
+                    is Resources.Loading ->{
+                    }
+                    is Resources.Success ->{
+                        val registerContact = it.data
+                        registerContactListAdapter.asyncListDiffer.submitList(registerContact)
+                    }
+                    is Resources.Error ->{
+                        Toast.makeText(requireContext(),"Failed to Fetch  Contact",Toast.LENGTH_SHORT).show()
+                    }else ->Unit
+                }
             }
         }
     }
@@ -115,6 +145,5 @@ class ContactFragment : Fragment(),RegisterContactListAdapter.OnItemClickListene
     override fun onItemClick(registerUser: UserProfile) {
         val action =ContactFragmentDirections.actionContactFragmentToChatRoomFragment(registerUser)
         findNavController().navigate(action)
-
     }
 }

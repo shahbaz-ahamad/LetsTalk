@@ -3,6 +3,7 @@ package com.shahbaz.letstalk.fragment
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -12,22 +13,35 @@ import androidx.activity.viewModels
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.shahbaz.letstalk.R
+import com.shahbaz.letstalk.adapter.RegisterContactListAdapter
 import com.shahbaz.letstalk.databinding.FragmentChatBinding
 import com.shahbaz.letstalk.databinding.FragmentStoriesBinding
+import com.shahbaz.letstalk.datamodel.UserProfile
 import com.shahbaz.letstalk.helper.showBottomNavigation
+import com.shahbaz.letstalk.sealedclass.Resources
 import com.shahbaz.letstalk.viewmodel.AuthViewmodel
+import com.shahbaz.letstalk.viewmodel.ChatFragmetViewmodel
+import com.shahbaz.letstalk.viewmodel.ChatViewmodel
+import com.shahbaz.letstalk.viewmodel.ContactViewmodel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 
 
 @AndroidEntryPoint
-class ChatFragment : Fragment() {
-
+class ChatFragment : Fragment(),RegisterContactListAdapter.OnItemClickListener {
     private lateinit var binding:FragmentChatBinding
     private val READ_CONTACTS_PERMISSION_REQUEST = 101
     private val viewmodel by viewModels<AuthViewmodel>()
+    private val recentViewmodel by viewModels<ChatFragmetViewmodel>()
+    private val contactViewmodel by viewModels<ContactViewmodel>()
+    private val registerContactListAdapter :RegisterContactListAdapter by lazy {
+        RegisterContactListAdapter(requireContext(),this,contactViewmodel.currentUser?.uid.toString())
+    }
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -44,6 +58,9 @@ class ChatFragment : Fragment() {
         binding.addChat.setOnClickListener {
             requestContactsPermission()
         }
+
+        recentViewmodel.recentUser()
+        recyclerview()
     }
 
 
@@ -132,5 +149,44 @@ class ChatFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         showBottomNavigation()
+    }
+
+    override fun onItemClick(recentUser: UserProfile) {
+        val action = ChatFragmentDirections.actionChatFragmentToChatRoomFragment(recentUser)
+        findNavController().navigate(action)
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+       lifecycleScope.launchWhenStarted {
+           recentViewmodel.chatFragmentrepoState.collectLatest {
+               when(it){
+                   is Resources.Error ->{
+                       binding.progressabr.visibility=View.GONE
+                       Toast.makeText(requireContext(),it.toString(),Toast.LENGTH_SHORT).show()
+                   }
+                   is Resources.Loading -> {
+                       binding.progressabr.visibility=View.VISIBLE
+                       Toast.makeText(requireContext(),"Loading",Toast.LENGTH_SHORT).show()
+                   }
+                   is Resources.Success ->{
+                       val data = it.data
+                       registerContactListAdapter.asyncListDiffer.submitList(data)
+                       Log.d("recent",data.toString())
+                       binding.progressabr.visibility=View.GONE
+                   }
+                   else ->Unit
+               }
+           }
+       }
+    }
+
+
+    fun recyclerview(){
+        binding.apply {
+            recyclerviewRecentChat.layoutManager=LinearLayoutManager(requireContext(),LinearLayoutManager.VERTICAL,false)
+            recyclerviewRecentChat.adapter=registerContactListAdapter
+        }
     }
 }

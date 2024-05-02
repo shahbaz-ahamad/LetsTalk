@@ -17,13 +17,20 @@ class ContactViewmodel @Inject constructor(
     private val contactRepositiory: ContactRepositiory
 ) :ViewModel() {
     val registerContactsState : Flow<Resources<MutableList<UserProfile>>> = contactRepositiory.contactState
-
-    val unRegisterContactState :Flow<Resources<MutableList<UnregisteredUser>>> =contactRepositiory.unRegisterContactState
+    val registerContactsFromRoomState : Flow<Resources<MutableList<UserProfile>>> = contactRepositiory.registerContactsStateFromRoomDatabase
+    val unRegisterContactState:Flow<Resources<MutableList<UnregisteredUser>>> =contactRepositiory.unRegisterContactState
     fun FetchContact() :MutableMap<String,String>{
        return contactRepositiory.fetchContact()
     }
 
     fun FetchRegisterUser(contactList : MutableMap<String,String>){
-        contactRepositiory.fetchRegisterUser(contactList)
+        contactRepositiory.fetchRegisterUserAndInserItToRoomDatabase(contactList)
     }
+
+    fun FetchRegisterUserFromRooDatabase(){
+        contactRepositiory.fetchUserFromRoomDatabase()
+    }
+
+    val currentUser = contactRepositiory.currentUser
+
 }

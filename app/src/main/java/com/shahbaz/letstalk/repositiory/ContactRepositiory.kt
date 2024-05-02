@@ -12,26 +12,40 @@ import com.google.firebase.database.ValueEventListener
 import com.shahbaz.letstalk.datamodel.UnregisteredUser
 import com.shahbaz.letstalk.datamodel.UserProfile
 import com.shahbaz.letstalk.fragment.ContactFragment
+import com.shahbaz.letstalk.room.RoomDao
 import com.shahbaz.letstalk.sealedclass.Resources
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class ContactRepositiory @Inject constructor(
     private val firebaseDatabase: FirebaseDatabase,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val roomDao: RoomDao,
+    private val firebaseAuth: FirebaseAuth
 ) {
 
-    private val _registerContactsState = MutableStateFlow<Resources<MutableList<UserProfile>>>(Resources.Unspecified())
+    private val _registerContactsState =
+        MutableStateFlow<Resources<MutableList<UserProfile>>>(Resources.Unspecified())
     val contactState = _registerContactsState.asStateFlow()
 
+    private val _registerContactsStateFromRoomDatabase =
+        MutableStateFlow<Resources<MutableList<UserProfile>>>(Resources.Unspecified())
+    val registerContactsStateFromRoomDatabase = _registerContactsStateFromRoomDatabase.asStateFlow()
 
-    private val _unRegisterContactState= MutableStateFlow<Resources<MutableList<UnregisteredUser>>>(Resources.Unspecified())
-    val unRegisterContactState= _unRegisterContactState.asStateFlow()
 
+    private val _unRegisterContactState =
+        MutableStateFlow<Resources<MutableList<UnregisteredUser>>>(Resources.Unspecified())
+    val unRegisterContactState = _unRegisterContactState.asStateFlow()
 
     var unRegisteredContact = mutableListOf<UnregisteredUser>()
+
+
+    val currentUser = firebaseAuth.currentUser
     fun fetchContact(): MutableMap<String, String> {
         val contactList = mutableMapOf<String, String>()
         val cursor: Cursor? = context.contentResolver.query(
@@ -54,9 +68,8 @@ class ContactRepositiory @Inject constructor(
         return contactList
     }
 
-
-    fun fetchRegisterUser(contactList: MutableMap<String, String>) {
-        unRegisteredContact= mutableListOf<UnregisteredUser>()
+    fun fetchRegisterUserAndInserItToRoomDatabase(contactList: MutableMap<String, String>) {
+        unRegisteredContact = mutableListOf<UnregisteredUser>()
         _registerContactsState.value = Resources.Loading()
         val userList = mutableListOf<UserProfile>()
         val normalizedContactList = contactList.mapValues { it.value.replace("\\s+".toRegex(), "") }
@@ -71,21 +84,42 @@ class ContactRepositiory @Inject constructor(
                                 if (user != null) {
                                     userList.add(user)
                                 }
-                                if (userList.isNotEmpty()){
+                                if (userList.isNotEmpty()) {
+                                    CoroutineScope(Dispatchers.IO).launch {
+                                        roomDao.insertUserProfile(userList)
+
+                                    }
                                     _registerContactsState.value = Resources.Success(userList)
                                 }
                             }
-                            if (!snapshot.exists()){
-                               unRegisteredContact.add(UnregisteredUser(name, phoneNumber))
-                               _unRegisterContactState.value=Resources.Success(unRegisteredContact)
+                            if (!snapshot.exists()) {
+                                unRegisteredContact.add(UnregisteredUser(name, phoneNumber))
+                                    _unRegisterContactState.value =
+                                        Resources.Success(unRegisteredContact)
+
+
                             }
                         }
+
                         override fun onCancelled(error: DatabaseError) {
                             _registerContactsState.value = Resources.Error(error.message.toString())
                         }
                     }
                 )
 
+        }
+    }
+
+    fun fetchUserFromRoomDatabase() {
+        _registerContactsStateFromRoomDatabase.value = Resources.Loading()
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = roomDao.getRegisterUserProfile()
+            if (result.isNotEmpty()) {
+                _registerContactsStateFromRoomDatabase.value = Resources.Success(result)
+            } else {
+                _registerContactsStateFromRoomDatabase.value =
+                    Resources.Error("Failed to fetch data")
+            }
         }
     }
 

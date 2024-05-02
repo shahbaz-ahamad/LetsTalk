@@ -14,7 +14,8 @@ import com.shahbaz.letstalk.datamodel.UserProfile
 
 class RegisterContactListAdapter(
     val context: Context,
-    val clickListener : OnItemClickListener
+    val clickListener : OnItemClickListener,
+    val currentUser :String
     ) :
     RecyclerView.Adapter<RegisterContactListAdapter.MyViewholder>() {
     inner class MyViewholder(val binding: ContactListLayoutBinding) :
@@ -28,10 +29,19 @@ class RegisterContactListAdapter(
                         .placeholder(R.drawable.profile)
                         .into(binding.profileImage)
 
-                    binding.name.text = currentContact.userName
+                    if(currentUser == currentContact.userId){
+                        binding.name.text = currentContact.userName+"(You)"
+                    }else{
+                        binding.name.text = currentContact.userName
+                    }
                 }else{
                     binding.profileImage.setImageResource(R.drawable.profile)
-                    binding.name.text = currentContact.userName
+                    if(currentUser == currentContact.userId){
+                        binding.name.text = currentContact.userName+"(You)"
+                    }else{
+                        binding.name.text = currentContact.userName
+
+                    }
                 }
             }
             itemView.setOnClickListener{
