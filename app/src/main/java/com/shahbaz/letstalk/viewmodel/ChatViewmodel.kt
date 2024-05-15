@@ -1,9 +1,13 @@
 package com.shahbaz.letstalk.viewmodel
 
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
+import com.firebase.ui.firestore.FirestoreRecyclerOptions
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.shahbaz.letstalk.datamodel.MessageModel
 import com.shahbaz.letstalk.datamodel.UserProfile
+import com.shahbaz.letstalk.fragment.ChatRoomFragment
 import com.shahbaz.letstalk.repositiory.ChatRepo
 import com.shahbaz.letstalk.sealedclass.Resources
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,17 +21,18 @@ class ChatViewmodel @Inject constructor(
     private val firebaseAuth: FirebaseAuth
 ) : ViewModel() {
 
-    val chatSendState : Flow<Resources<List<MessageModel>>> =chatRepo.messageSateSend
-    val chatFetched : Flow<Resources<ArrayList<MessageModel>>>  = chatRepo.messageFetched
 
+    val messageOptions: FirestoreRecyclerOptions<MessageModel> =
+        chatRepo.getMessageOptions(ChatRoomFragment.chatRoomId)
 
     val currentUser = firebaseAuth.currentUser
 
-    fun sendMessage(user:UserProfile,message: String){
-       chatRepo.sendMessage(user,message)
+    fun sendMessage(chatRoomId: String,message: String) {
+        chatRepo.sendMessage(chatRoomId,message)
     }
 
-    fun fetchedMesage(user: UserProfile){
-        chatRepo.fetchMessage(user)
+
+    fun getOrCreateChatRoomModel(chatRoomId:String,userProfile: UserProfile) {
+        chatRepo.getOrCreateChatRoom(chatRoomId,userProfile)
     }
 }

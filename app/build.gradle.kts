@@ -57,6 +57,8 @@ dependencies {
     implementation("com.google.firebase:firebase-database:20.3.1")
     implementation("com.google.firebase:firebase-storage:20.3.0")
     implementation("com.google.firebase:protolite-well-known-types:18.0.0")
+    implementation("com.google.firebase:firebase-messaging:23.4.1")
+    implementation("com.google.firebase:firebase-firestore:25.0.0")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
@@ -112,6 +114,14 @@ dependencies {
     kapt("androidx.room:room-compiler:$room_version")
     implementation("androidx.room:room-ktx:$room_version")
     implementation("androidx.lifecycle:lifecycle-common-java8:$lifecycle_version")
+
+
+    //for the notifcation
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    //for the recycleroption of the firstore
+    implementation ("com.firebaseui:firebase-ui-firestore:7.2.0")
+
 }
 
 

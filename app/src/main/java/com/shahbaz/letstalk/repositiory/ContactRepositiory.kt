@@ -4,14 +4,17 @@ import android.content.Context
 import android.database.Cursor
 import android.provider.ContactsContract
 import android.util.Log
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.shahbaz.letstalk.datamodel.ChatRoomModel
 import com.shahbaz.letstalk.datamodel.UnregisteredUser
 import com.shahbaz.letstalk.datamodel.UserProfile
 import com.shahbaz.letstalk.fragment.ContactFragment
+import com.shahbaz.letstalk.helper.FirebasseUtils
 import com.shahbaz.letstalk.room.RoomDao
 import com.shahbaz.letstalk.sealedclass.Resources
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -20,13 +23,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.Arrays
 import javax.inject.Inject
 
 class ContactRepositiory @Inject constructor(
     private val firebaseDatabase: FirebaseDatabase,
     @ApplicationContext private val context: Context,
     private val roomDao: RoomDao,
-    private val firebaseAuth: FirebaseAuth
+    private val firebaseAuth: FirebaseAuth,
+    private val firebasseUtils: FirebasseUtils
 ) {
 
     private val _registerContactsState =
@@ -43,7 +48,6 @@ class ContactRepositiory @Inject constructor(
     val unRegisterContactState = _unRegisterContactState.asStateFlow()
 
     var unRegisteredContact = mutableListOf<UnregisteredUser>()
-
 
     val currentUser = firebaseAuth.currentUser
     fun fetchContact(): MutableMap<String, String> {
@@ -73,40 +77,29 @@ class ContactRepositiory @Inject constructor(
         _registerContactsState.value = Resources.Loading()
         val userList = mutableListOf<UserProfile>()
         val normalizedContactList = contactList.mapValues { it.value.replace("\\s+".toRegex(), "") }
-        val storageRef = firebaseDatabase.reference.child("User_Profile")
+        val userCollectionRef = firebasseUtils.allUserCollectionReference()
+
         for ((name, phoneNumber) in normalizedContactList) {
-            storageRef.orderByChild("userNumber").equalTo(phoneNumber)
-                .addListenerForSingleValueEvent(
-                    object : ValueEventListener {
-                        override fun onDataChange(snapshot: DataSnapshot) {
-                            for (snapshots in snapshot.children) {
-                                val user = snapshots.getValue(UserProfile::class.java)
-                                if (user != null) {
-                                    userList.add(user)
-                                }
-                                if (userList.isNotEmpty()) {
-                                    CoroutineScope(Dispatchers.IO).launch {
-                                        roomDao.insertUserProfile(userList)
-
-                                    }
-                                    _registerContactsState.value = Resources.Success(userList)
-                                }
-                            }
-                            if (!snapshot.exists()) {
-                                unRegisteredContact.add(UnregisteredUser(name, phoneNumber))
-                                    _unRegisterContactState.value =
-                                        Resources.Success(unRegisteredContact)
-
-
-                            }
-                        }
-
-                        override fun onCancelled(error: DatabaseError) {
-                            _registerContactsState.value = Resources.Error(error.message.toString())
-                        }
+            userCollectionRef.whereEqualTo("userNumber", phoneNumber)
+                .get()
+                .addOnSuccessListener { querySnapshot ->
+                    for (document in querySnapshot) {
+                        val user = document.toObject(UserProfile::class.java)
+                        userList.add(user)
                     }
-                )
-
+                    if (userList.isNotEmpty()) {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            roomDao.insertUserProfile(userList)
+                        }
+                        _registerContactsState.value = Resources.Success(userList)
+                    } else {
+                        unRegisteredContact.add(UnregisteredUser(name, phoneNumber))
+                        _unRegisterContactState.value = Resources.Success(unRegisteredContact)
+                    }
+                }
+                .addOnFailureListener { exception ->
+                    _registerContactsState.value = Resources.Error(exception.message.toString())
+                }
         }
     }
 
@@ -122,5 +115,7 @@ class ContactRepositiory @Inject constructor(
             }
         }
     }
+
+
 
 }

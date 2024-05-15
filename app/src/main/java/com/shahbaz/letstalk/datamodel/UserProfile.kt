@@ -14,5 +14,6 @@ data class UserProfile(
     val userName:String="",
     val userProfileImage:String="",
     val userNumber :String="",
-    val recent:Boolean=false
+    val recent:Boolean=false,
+    val token:String=""
 ):Parcelable

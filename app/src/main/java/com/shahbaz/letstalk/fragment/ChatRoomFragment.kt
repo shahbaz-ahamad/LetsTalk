@@ -1,5 +1,6 @@
 package com.shahbaz.letstalk.fragment
 
+import MessageAdapter
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -8,107 +9,148 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.shahbaz.letstalk.R
-import com.shahbaz.letstalk.adapter.MessageAdapter
 import com.shahbaz.letstalk.databinding.FragmentChatRoomBinding
 import com.shahbaz.letstalk.datamodel.MessageModel
 import com.shahbaz.letstalk.datamodel.UserProfile
+import com.shahbaz.letstalk.helper.FirebasseUtils
 import com.shahbaz.letstalk.helper.hideBottomNavigation
 import com.shahbaz.letstalk.sealedclass.Resources
 import com.shahbaz.letstalk.viewmodel.ChatViewmodel
+import com.shahbaz.letstalk.viewmodel.UserProfileViewmodel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
+import javax.inject.Inject
 
 
 @AndroidEntryPoint
-class ChatRoomFragment : Fragment(){
+class ChatRoomFragment : Fragment() {
 
     private lateinit var binding: FragmentChatRoomBinding
     private val args by navArgs<ChatRoomFragmentArgs>()
-    private lateinit var user:UserProfile
+    private lateinit var user: UserProfile
     private val viewModel by viewModels<ChatViewmodel>()
+    private val profileViewmodel by viewModels<UserProfileViewmodel>()
 
+    companion object{
+        var chatRoomId:String =""
+    }
+
+    @Inject
+    lateinit var firebasseUtils: FirebasseUtils
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        binding=FragmentChatRoomBinding.inflate(inflater,container,false)
+        binding = FragmentChatRoomBinding.inflate(inflater, container, false)
         return binding.root
     }
+
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         hideBottomNavigation()
-        user=args.userProfile
+
+        chatRoomId= firebasseUtils.currentUserId()
+            ?.let { firebasseUtils.getChatRoomId(it, user.userId) }.toString()
         showUserDetails()
+
+        viewModel.getOrCreateChatRoomModel(chatRoomId,user)
+
         binding.backButton.setOnClickListener {
             findNavController().navigateUp()
         }
-
         binding.sendButton.setOnClickListener {
             binding.apply {
-                if(messageBox.text.isNotEmpty()){
-                    val message =messageBox.text.toString()
-                    viewModel.sendMessage(user,message)
+                if (messageBox.text.isNotEmpty()) {
+                    val message = messageBox.text.toString()
+                    viewModel.sendMessage(chatRoomId,message)
                     messageBox.text.clear()
-                }else{
-                    Toast.makeText(requireContext(),"Can't Send Empty Message",Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(requireContext(), "Can't Send Empty Message", Toast.LENGTH_SHORT)
+                        .show()
                 }
             }
         }
+        setupRecyclerView()
 
-        viewModel.fetchedMesage(user)
-    }
-
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
 
         lifecycleScope.launchWhenStarted {
-            viewModel.chatFetched.collectLatest {
+            profileViewmodel.userOnlineStatus.collectLatest {
                 when(it){
-                    is Resources.Loading ->{
+                    is Resources.Error -> {
+
 
                     }
-                    is Resources.Success ->{
-                        val message = it.data
-                        if(message != null){
-                            binding.apply {
-                                val currentUser= viewModel.currentUser
-                                recyclerViewMsg.layoutManager=LinearLayoutManager(requireContext())
-                                val adapterMsg = MessageAdapter(message,currentUser?.uid.toString())
-                                recyclerViewMsg.adapter=adapterMsg
-                                Log.d("message",message.toString())
-                            }
+                    is Resources.Loading -> {
+
+
+                    }
+                    is Resources.Success -> {
+                        if(it.data == true){
+                            binding.status.text="Online"
+                        }else{
+                            binding.status.text="Last Seen Moment Ago"
                         }
                     }
-                    is Resources.Error ->{
-
-                    }else -> Unit
+                    else -> Unit
                 }
             }
         }
     }
-    private fun showUserDetails(){
+
+
+    private fun showUserDetails() {
         binding.apply {
-            if (user.userProfileImage != ""){
+            if (user.userProfileImage != "") {
                 Glide
                     .with(requireContext())
                     .load(user.userProfileImage)
                     .placeholder(R.drawable.profile)
                     .into(profileImage)
                 name.text = user.userName
-            }else{
+            } else {
                 name.text = user.userName
             }
+
         }
     }
 
+    private fun setupRecyclerView() {
+        binding.recyclerViewMsg.layoutManager = LinearLayoutManager(
+            requireContext(),
+            LinearLayoutManager.VERTICAL,
+            true
+        )
+        val mAdapter = MessageAdapter(viewModel.messageOptions,viewModel.currentUser?.uid.toString())
+        binding.recyclerViewMsg.adapter=mAdapter
+        mAdapter.startListening()
+        mAdapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
+            override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
+                super.onItemRangeInserted(positionStart, itemCount)
+                binding.recyclerViewMsg.smoothScrollToPosition(0)
+            }
+        })
+    }
 
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        user = args.userProfile
+
+        profileViewmodel.FetchUserOnlineStatus(user.userId)
+
+
+    }
 }
+
+

@@ -1,103 +1,93 @@
 package com.shahbaz.letstalk.repositiory
 
+import android.util.Log
+import com.firebase.ui.firestore.FirestoreRecyclerOptions
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
+import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.toObject
+import com.shahbaz.letstalk.datamodel.ChatRoomModel
 import com.shahbaz.letstalk.datamodel.MessageModel
 import com.shahbaz.letstalk.datamodel.UserProfile
-import com.shahbaz.letstalk.sealedclass.Resources
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import java.util.UUID
+import com.shahbaz.letstalk.helper.FirebasseUtils
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody
+import okhttp3.Response
+import org.json.JSONObject
+import java.io.IOException
+import java.util.Arrays
 import javax.inject.Inject
+
 
 class ChatRepo @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
-    private val firebaseDatabase: FirebaseDatabase
+    private val firebasseUtils: FirebasseUtils
 ) {
+    val currentUser = firebaseAuth.currentUser
+    var chatRoomModel = ChatRoomModel()
 
-
-    private val _messageSendState =
-        MutableStateFlow<Resources<List<MessageModel>>>(Resources.Unspecified())
-    val messageSateSend = _messageSendState.asStateFlow()
-
-
-    private val _messageFetched =
-        MutableStateFlow<Resources<ArrayList<MessageModel>>>(Resources.Unspecified())
-    val messageFetched = _messageFetched.asStateFlow()
-
-    fun sendMessage(user: UserProfile, message: String) {
-        var senderUid = firebaseAuth.currentUser?.uid.toString()
-        var receiverUid = user.userId
-        var senderRoom = senderUid + receiverUid
-        var receiverRoom = receiverUid + senderUid
-        val messageModel = MessageModel(senderUid, message, System.currentTimeMillis(), false, user)
-        storeMessageInRealtimeDatabase(senderRoom, receiverRoom, messageModel)
+    fun getOrCreateChatRoom(chatRoomId: String, userProfile: UserProfile) {
+        firebasseUtils.getChatRoomReference(chatRoomId).get()
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful){
+                    val result = task.result.toObject(ChatRoomModel::class.java)
+                    if(result == null){
+                        chatRoomModel = ChatRoomModel(
+                            chatRoomId,
+                            listOf(currentUser?.uid.toString(), userProfile.userId),
+                            Timestamp.now(),
+                            "",
+                            ""
+                        )
+                        firebasseUtils.getChatRoomReference(chatRoomId).set(chatRoomModel)
+                    }
+                }
+            }
     }
 
-    fun generateRandomId(): String {
-        return UUID.randomUUID().toString()
-    }
+    fun sendMessage(chatRoomId: String, message: String) {
+        chatRoomModel.lastMessagetimeStamp = Timestamp.now()
+        chatRoomModel.lastMessageSenderId = firebasseUtils.currentUserId().toString()
+        chatRoomModel.lastMessage=message
+        val messageModel =
+            firebasseUtils.currentUserId()
+                ?.let { MessageModel(it, message, Timestamp.now(), false) }
 
-    fun storeMessageInRealtimeDatabase(
-        senderRoom: String,
-        receiverRoom: String,
-        message: MessageModel
-    ) {
-        val senderRef = firebaseDatabase.reference
-            .child("Chats")
-            .child(senderRoom)
-            .child("Message")
-            .push()
-        val receiverRef = firebaseDatabase.reference
-            .child("Chats")
-            .child(receiverRoom)
-            .child("Message")
-            .push()
-
-        senderRef.setValue(message)
-            .addOnSuccessListener {
-                receiverRef.setValue(message)
-                    .addOnSuccessListener {
-                        _messageSendState.value = Resources.Success(listOf(message))
-                    }
-                    .addOnFailureListener {
-                        _messageSendState.value = Resources.Error("Can't Insert to Receiver")
-                    }
+        firebasseUtils.getChatRoomReference(chatRoomId)
+            .update(
+                mapOf(
+                    "lastMessagetimeStamp" to chatRoomModel.lastMessagetimeStamp,
+                    "lastMessageSenderId" to chatRoomModel.lastMessageSenderId,
+                    "lastMessage" to chatRoomModel.lastMessage
+                )
+            ).addOnCompleteListener {
+                // After updating the chat room, add the message to the messages collection
+                if (messageModel != null) {
+                    firebasseUtils.getChatRoomMessageReference(chatRoomId)
+                        .add(messageModel)
+                        .addOnCompleteListener {
+                            Log.d("Message", "Message Stored")
+                        }
+                }
             }.addOnFailureListener {
-                _messageSendState.value = Resources.Error("Unable to send Message")
+                Log.d("Error", "Failed to update Chatroom")
             }
 
+
     }
 
+    fun getMessageOptions(chatRoomId: String): FirestoreRecyclerOptions<MessageModel> {
+        val query: Query = firebasseUtils.getChatRoomMessageReference(chatRoomId)
+            .orderBy("timestamp", Query.Direction.DESCENDING)
 
-    fun fetchMessage(user: UserProfile) {
-        val message=ArrayList<MessageModel>()
-        val senderRoom=firebaseAuth.currentUser?.uid+user.userId
-        firebaseDatabase.reference
-            .child("Chats")
-            .child(senderRoom)
-            .child("Message")
-            .addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    message.clear()
-                    for (snapshots in snapshot.children) {
-                        val data =snapshots.getValue(MessageModel::class.java)
-                        message.add(data!!)
-                        if(message.isNotEmpty()){
-                            _messageFetched.value=Resources.Success(message)
-                        }else{
-                            _messageFetched.value=Resources.Error("No Message Found")
-                        }
-                    }
-                }
-                override fun onCancelled(error: DatabaseError) {
-                    _messageFetched.value=Resources.Error(error.message.toString())
-                }
-
-            })
+        return FirestoreRecyclerOptions.Builder<MessageModel>()
+            .setQuery(query, MessageModel::class.java)
+            .build()
     }
 
 }

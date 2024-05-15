@@ -1,13 +1,19 @@
 package com.shahbaz.letstalk.repositiory
 
+import android.content.Context
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.userProfileChangeRequest
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.storage.FirebaseStorage
 import com.shahbaz.letstalk.datamodel.UserProfile
+import com.shahbaz.letstalk.helper.FirebasseUtils
+import com.shahbaz.letstalk.sealedclass.Resources
 import com.shahbaz.letstalk.sealedclass.UserProfileSetupState
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
@@ -15,21 +21,25 @@ import javax.inject.Inject
 
 class ProfileRepo @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
-    private val firebaseDatabase: FirebaseDatabase,
-    private val firebaseStorage: FirebaseStorage
-) {
+    private val firebaseStorage: FirebaseStorage,
+    private val firebaseUtil: FirebasseUtils,
+    ) {
 
     private val _userUpdateStatus =
         MutableStateFlow<UserProfileSetupState>(UserProfileSetupState.Unspecified)
     val userUpdateStatus = _userUpdateStatus.asStateFlow()
 
+
+
+    private val _userOnlineStatus =MutableStateFlow<Resources<Boolean>>(Resources.Unspecified())
+    val userOnlineStatus =_userOnlineStatus.asStateFlow()
+
     val currentUser
         get() =
             firebaseAuth.currentUser
 
-    fun AddUserDataToFirebase(name: String, selectedImageUri: Uri?) {
 
-        Log.d("uid", currentUser?.uid.toString())
+    fun AddUserDataToFirebase(name: String, selectedImageUri: Uri?) {
         _userUpdateStatus.value = UserProfileSetupState.Loading
         if (selectedImageUri != null) {
             val imageName = currentUser?.uid + name
@@ -56,7 +66,8 @@ class ProfileRepo @Inject constructor(
                                             imageUrl.toString(),
                                             currentUser!!.phoneNumber.toString()
                                         )
-                                        AddUserToRealtimeDatabase(userProfile)
+                                       // AddUserToRealtimeDatabase(userProfile)
+                                        AddUserToFirestore(userProfile)
                                     } else {
                                         _userUpdateStatus.value =
                                             UserProfileSetupState.Error("failed to update")
@@ -93,7 +104,8 @@ class ProfileRepo @Inject constructor(
                                 "",
                                 currentUser!!.phoneNumber.toString()
                             )
-                            AddUserToRealtimeDatabase(userProfile)
+                           // AddUserToRealtimeDatabase(userProfile)
+                            AddUserToFirestore(userProfile)
                         } else {
                             _userUpdateStatus.value =
                                 UserProfileSetupState.Error("failed to update")
@@ -104,20 +116,51 @@ class ProfileRepo @Inject constructor(
         }
     }
 
-
-    fun AddUserToRealtimeDatabase(userProfile: UserProfile) {
-        val storageRef = currentUser?.let {
-            firebaseDatabase.reference.child("User_Profile").child(
-                it.uid
-            )
-        }
-
-        storageRef?.setValue(userProfile)
-            ?.addOnSuccessListener {
-                _userUpdateStatus.value = UserProfileSetupState.Success(userProfile)
+    fun AddUserToFirestore(userProfile: UserProfile) {
+        firebaseUtil.currentUserDetails()?.set(userProfile)
+            ?.addOnCompleteListener {
+                if (it.isSuccessful) {
+                    _userUpdateStatus.value = UserProfileSetupState.Success(userProfile)
+                }
             }
             ?.addOnFailureListener {
                 _userUpdateStatus.value = UserProfileSetupState.Error(it.localizedMessage)
             }
     }
+
+
+    fun ChangeUserStatus(status:Boolean){
+        val userStatus = hashMapOf<String,Any>(
+            "recent" to status
+        )
+        firebaseUtil.currentUserId()?.let {
+            firebaseUtil.allUserCollectionReference().document(it)
+                .update(userStatus)
+                .addOnSuccessListener {
+
+                }
+                .addOnFailureListener {
+
+                }
+        }
+    }
+
+
+    fun fetchUserStatus(userId: String) {
+        firebaseUtil.allUserCollectionReference().document(userId)
+            .addSnapshotListener { snapshot, exception ->
+                if (exception != null) {
+                    _userOnlineStatus.value = Resources.Error("Failed to fetch status: ${exception.message}")
+                    return@addSnapshotListener
+                }
+
+                if (snapshot != null && snapshot.exists()) {
+                    val result = snapshot.getBoolean("recent")
+                    _userOnlineStatus.value = Resources.Success(result ?: false)
+                } else {
+                    _userOnlineStatus.value = Resources.Error("User document doesn't exist")
+                }
+            }
+    }
+
 }

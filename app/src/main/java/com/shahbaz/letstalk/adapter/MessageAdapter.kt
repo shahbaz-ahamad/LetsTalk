@@ -1,60 +1,55 @@
-package com.shahbaz.letstalk.adapter
-
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.firebase.ui.firestore.FirestoreRecyclerAdapter
+import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import com.shahbaz.letstalk.R
 import com.shahbaz.letstalk.databinding.ReceiveMessageLayoutBinding
 import com.shahbaz.letstalk.databinding.SendMessageLayoutBinding
 import com.shahbaz.letstalk.datamodel.MessageModel
 
-class MessageAdapter(private val messageModel: ArrayList<MessageModel>, private val uid: String) :
-    RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    val ITEM_SEND = 1
-    val ITEM_RECEIVED = 2
+class MessageAdapter(options: FirestoreRecyclerOptions<MessageModel>, private val uid: String) :
+    FirestoreRecyclerAdapter<MessageModel, RecyclerView.ViewHolder>(options) {
 
-
-    //to find out wheter it is received msg or send msg
-    override fun getItemViewType(position: Int): Int {
-        return if (uid == messageModel[position].senderId) ITEM_SEND else ITEM_RECEIVED
-    }
+    private val ITEM_SEND = 1
+    private val ITEM_RECEIVED = 2
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return if (viewType == ITEM_SEND)
             SendViewholder(
-                LayoutInflater.from(parent.context).inflate(R.layout.send_message_layout,parent,false)
+                SendMessageLayoutBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             )
         else
             ReceivedViewholder(
-                LayoutInflater.from(parent.context).inflate(R.layout.receive_message_layout,parent,false)
+                ReceiveMessageLayoutBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             )
-
-
     }
 
-    override fun getItemCount(): Int {
-        return messageModel.size
-    }
-
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        val message =messageModel[position]
-
-        if(holder.itemViewType == ITEM_SEND){
-            val viewholder =holder as SendViewholder
-            viewholder.binding.sendMessage.text=message.message
-        }else{
-            val viewholder = holder as ReceivedViewholder
-            viewholder.binding.receivedMessage.text=message.message
-
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, model: MessageModel) {
+        if (getItemViewType(position) == ITEM_SEND) {
+            val viewHolder = holder as SendViewholder
+            viewHolder.bind(model)
+        } else {
+            val viewHolder = holder as ReceivedViewholder
+            viewHolder.bind(model)
         }
     }
 
-    inner class SendViewholder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        var binding = SendMessageLayoutBinding.bind(itemView)
+    override fun getItemViewType(position: Int): Int {
+        return if (uid == getItem(position).senderId) ITEM_SEND else ITEM_RECEIVED
     }
 
-    inner class ReceivedViewholder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        var binding = ReceiveMessageLayoutBinding.bind(itemView)
+    inner class SendViewholder(private val binding: SendMessageLayoutBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+        fun bind(model: MessageModel) {
+            binding.sendMessage.text = model.message
+        }
+    }
+
+    inner class ReceivedViewholder(private val binding: ReceiveMessageLayoutBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+        fun bind(model: MessageModel) {
+            binding.receivedMessage.text = model.message
+        }
     }
 }

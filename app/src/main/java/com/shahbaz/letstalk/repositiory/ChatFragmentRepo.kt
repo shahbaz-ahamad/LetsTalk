@@ -1,46 +1,46 @@
 package com.shahbaz.letstalk.repositiory
 
+import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.firestore.Query
+import com.shahbaz.letstalk.datamodel.ChatRoomModel
 import com.shahbaz.letstalk.datamodel.UserProfile
+import com.shahbaz.letstalk.helper.FirebasseUtils
 import com.shahbaz.letstalk.sealedclass.Resources
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
 class ChatFragmentRepo @Inject constructor(
-    private val firebaseDatabase: FirebaseDatabase
+    private val firebasseUtils: FirebasseUtils
 ) {
 
-    private val _recentuserSate = MutableStateFlow<Resources<MutableList<UserProfile>>>(Resources.Unspecified())
+    private val _recentuserSate = MutableStateFlow<Resources<FirestoreRecyclerOptions<ChatRoomModel>>>(Resources.Unspecified())
     val recentUserState = _recentuserSate.asStateFlow()
-    fun fetchRecentUser(){
-        val userList = mutableListOf<UserProfile>()
-        firebaseDatabase.reference
-            .child("User_Profile")
-            .orderByChild("recent")
-            .equalTo(true)
-            .addListenerForSingleValueEvent(object : ValueEventListener{
-                override fun onDataChange(snapshot: DataSnapshot) {
 
-                    for (snapshots in snapshot.children){
-                        val user = snapshots.getValue(UserProfile::class.java)
-                        if(user != null){
-                            userList.add(user)
-                        }
-                    }
 
-                    if(userList.isNotEmpty()){
-                        _recentuserSate.value=Resources.Success(userList)
-                    }
-                }
+    fun fetchRecentChat(){
+        try {
+            _recentuserSate.value=Resources.Loading()
+            val query = firebasseUtils.currentUserId()?.let {currentUserId ->
+                firebasseUtils.allChatroomCollectionReference()
+                    .whereArrayContains("userId", currentUserId)
+                    .orderBy("lastMessagetimeStamp",Query.Direction.DESCENDING)
+            }
 
-                override fun onCancelled(error: DatabaseError) {
-                    _recentuserSate.value=Resources.Error(error.message.toString())
-                }
-
-            })
+            query?.let {safeQury ->
+                val options= FirestoreRecyclerOptions.Builder<ChatRoomModel>()
+                    .setQuery(safeQury,ChatRoomModel::class.java)
+                    .build()
+                _recentuserSate.value= Resources.Success(options)
+            } ?: kotlin.run {
+                _recentuserSate.value = Resources.Error("User ID is null")
+            }
+        }catch (e :Exception){
+            _recentuserSate.value=Resources.Error(e.localizedMessage.toString())
+        }
     }
 }

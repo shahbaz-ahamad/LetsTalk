@@ -3,6 +3,7 @@ package com.shahbaz.letstalk
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.Window
 import android.view.WindowManager
@@ -11,8 +12,11 @@ import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.bumptech.glide.Glide
+import com.google.firebase.messaging.FirebaseMessaging
 import com.shahbaz.letstalk.databinding.ActivityMainBinding
+import com.shahbaz.letstalk.firebasemessaging.FirebaseMessagingService
 import com.shahbaz.letstalk.viewmodel.AuthViewmodel
+import com.shahbaz.letstalk.viewmodel.FirbaseMessagingViewmodel
 import com.shahbaz.letstalk.viewmodel.UserProfileViewmodel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlin.system.exitProcess
@@ -22,6 +26,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
+    private val viewmodel by viewModels<FirbaseMessagingViewmodel>()
+    private val profileViewmodel by viewModels<UserProfileViewmodel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,6 +35,23 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
         setupBottomNavigationView()
+
+        //for the userStauts like online or not
+        profileViewmodel.ChangeUserStatus(true)
+
+
+
+        //for the notification
+
+        FirebaseMessaging.getInstance().token.addOnCompleteListener {
+            if(it.isSuccessful){
+                Log.d("token",it.result)
+            }
+            val currentUser=viewmodel.currentUser?.uid.toString()
+            viewmodel.updateToken(currentUser,it.result)
+        }
+
+
     }
 
     private fun setupBottomNavigationView() {
@@ -38,5 +61,15 @@ class MainActivity : AppCompatActivity() {
         binding.bottomNavigationView.setupWithNavController(navController)
     }
 
+
+    override fun onPause() {
+        super.onPause()
+        profileViewmodel.ChangeUserStatus(false)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        profileViewmodel.ChangeUserStatus(true)
+    }
 
 }

@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -57,6 +58,7 @@ class ProfileFragment : Fragment() {
                     }
                     is UserProfileSetupState.Error ->{
                         binding.progressBar.visibility=View.INVISIBLE
+                        Log.d("Error",it.toString())
                         Toast.makeText(requireContext(),it.toString(),Toast.LENGTH_SHORT).show()
                     }else ->Unit
                 }

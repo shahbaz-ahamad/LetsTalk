@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_marginBottom="10dp"
     android:padding="5dp">
 
@@ -11,53 +12,60 @@
         android:id="@+id/linearLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layout_constraintStart_toStartOf="parent"
+        android:padding="5dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:padding="5dp">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-        <de.hdodenhof.circleimageview.CircleImageView
-            xmlns:app="http://schemas.android.com/apk/res-auto"
+        <de.hdodenhof.circleimageview.CircleImageView xmlns:app="http://schemas.android.com/apk/res-auto"
             android:id="@+id/profile_image"
             android:layout_width="60dp"
             android:layout_height="70dp"
-            android:src="@drawable/profile"
-            app:civ_border_width="4dp"
-            app:civ_border_color="@color/grey"
             android:scaleType="centerCrop"
-            />
+            app:civ_border_color="@color/grey"
+            app:civ_border_width="4dp"
+            tools:src="@drawable/profile" />
 
         <androidx.appcompat.widget.LinearLayoutCompat
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical"
             android:layout_marginStart="10dp"
-            android:padding="10dp">
+            android:orientation="vertical"
+            android:padding="10dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="5dp">
 
 
             <TextView
                 android:id="@+id/name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Shahbaz"
+                android:layout_weight="1"
                 android:textColor="@color/black"
                 android:textSize="20sp"
-                android:layout_weight="1"
-                />
+                tools:text="Shahbaz" />
 
             <TextView
                 android:id="@+id/taptoChart"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Tap To chat"
+                android:layout_weight="1"
                 android:textColor="@color/black"
                 android:textSize="15sp"
-                android:layout_weight="1"
-                />
+                tools:text="Tap To chat" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
 
+        <TextView
+            android:id="@+id/lastMessageTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:text="00:00"
+            android:layout_gravity="center"
+            android:layout_marginEnd="5dp"
+            android:textSize="15sp"
+            android:textColor="@color/black"/>
     </androidx.appcompat.widget.LinearLayoutCompat>
 
 

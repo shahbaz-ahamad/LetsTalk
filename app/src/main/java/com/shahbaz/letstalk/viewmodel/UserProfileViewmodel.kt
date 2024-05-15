@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import com.shahbaz.letstalk.datamodel.UserProfile
 import com.shahbaz.letstalk.repositiory.ProfileRepo
 import com.shahbaz.letstalk.sealedclass.PhoneAuthState
+import com.shahbaz.letstalk.sealedclass.Resources
 import com.shahbaz.letstalk.sealedclass.UserProfileSetupState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
@@ -16,9 +17,17 @@ class UserProfileViewmodel @Inject constructor(
 ) :ViewModel() {
 
     val profileUpdateState : Flow<UserProfileSetupState> =profileRepo.userUpdateStatus
+    val userOnlineStatus : Flow<Resources<Boolean>> =profileRepo.userOnlineStatus
 
     fun addDataToDatabase(name:String , imageUri: Uri?){
         profileRepo.AddUserDataToFirebase(name,imageUri)
+    }
 
+    fun ChangeUserStatus(status:Boolean){
+        profileRepo.ChangeUserStatus(status)
+    }
+
+    fun FetchUserOnlineStatus(userId:String){
+        profileRepo.fetchUserStatus(userId)
     }
 }

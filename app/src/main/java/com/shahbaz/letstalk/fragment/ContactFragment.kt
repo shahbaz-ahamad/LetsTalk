@@ -142,7 +142,7 @@ class ContactFragment : Fragment(),RegisterContactListAdapter.OnItemClickListene
     }
 
     //to perfrom onCLick on the contact to go chatroom fragement
-    override fun onItemClick(registerUser: UserProfile) {
+    override fun onItemClick(registerUser: UserProfile){
         val action =ContactFragmentDirections.actionContactFragmentToChatRoomFragment(registerUser)
         findNavController().navigate(action)
     }

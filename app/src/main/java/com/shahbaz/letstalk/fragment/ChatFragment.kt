@@ -17,11 +17,15 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
+import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import com.shahbaz.letstalk.R
+import com.shahbaz.letstalk.adapter.RecentChatAdapter
 import com.shahbaz.letstalk.adapter.RegisterContactListAdapter
 import com.shahbaz.letstalk.databinding.FragmentChatBinding
 import com.shahbaz.letstalk.databinding.FragmentStoriesBinding
+import com.shahbaz.letstalk.datamodel.ChatRoomModel
 import com.shahbaz.letstalk.datamodel.UserProfile
+import com.shahbaz.letstalk.helper.FirebasseUtils
 import com.shahbaz.letstalk.helper.showBottomNavigation
 import com.shahbaz.letstalk.sealedclass.Resources
 import com.shahbaz.letstalk.viewmodel.AuthViewmodel
@@ -30,37 +34,49 @@ import com.shahbaz.letstalk.viewmodel.ChatViewmodel
 import com.shahbaz.letstalk.viewmodel.ContactViewmodel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
+import javax.inject.Inject
 
 
 @AndroidEntryPoint
-class ChatFragment : Fragment(),RegisterContactListAdapter.OnItemClickListener {
-    private lateinit var binding:FragmentChatBinding
+class ChatFragment : Fragment(),RecentChatAdapter.OnItemClickListener {
+    private lateinit var binding: FragmentChatBinding
     private val READ_CONTACTS_PERMISSION_REQUEST = 101
     private val viewmodel by viewModels<AuthViewmodel>()
-    private val recentViewmodel by viewModels<ChatFragmetViewmodel>()
-    private val contactViewmodel by viewModels<ContactViewmodel>()
-    private val registerContactListAdapter :RegisterContactListAdapter by lazy {
-        RegisterContactListAdapter(requireContext(),this,contactViewmodel.currentUser?.uid.toString())
-    }
+    @Inject
+    lateinit var firebaseUtils: FirebasseUtils
+    private val recentChatViewmodel by viewModels<ChatFragmetViewmodel>()
+    private lateinit var recentChatAdapter: RecentChatAdapter
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        binding= FragmentChatBinding.inflate(inflater,container,false)
+        binding = FragmentChatBinding.inflate(inflater, container, false)
         return binding.root
     }
 
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        recentChatViewmodel.recentChat()
+
         displayUserInfo()
         binding.addChat.setOnClickListener {
             requestContactsPermission()
         }
 
-        recentViewmodel.recentUser()
-        recyclerview()
+    }
+
+    private fun setupRecentChatRecyclerView(options: FirestoreRecyclerOptions<ChatRoomModel>) {
+        recentChatAdapter = RecentChatAdapter(options, firebaseUtils, requireContext(),this)
+        binding.recyclerviewRecentChat.apply {
+            layoutManager =
+                LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
+            adapter = recentChatAdapter
+            recentChatAdapter.startListening()
+        }
     }
 
 
@@ -106,18 +122,19 @@ class ChatFragment : Fragment(),RegisterContactListAdapter.OnItemClickListener {
         requestCode: Int,
         permissions: Array<out String>,
         grantResults: IntArray
-    ){
+    ) {
         when (requestCode) {
             READ_CONTACTS_PERMISSION_REQUEST -> {
                 // If request is cancelled, the result arrays are empty.
                 if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
                     // Permission granted
-                   findNavController().navigate(R.id.action_chatFragment_to_contactFragment)
+                    findNavController().navigate(R.id.action_chatFragment_to_contactFragment)
                 } else {
                     // Permission denied
                     // Handle this case, e.g., show a message to the user
 
-                    Toast.makeText(requireContext(),"Please Allow Permission",Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Please Allow Permission", Toast.LENGTH_SHORT)
+                        .show()
                 }
                 return
             }
@@ -131,17 +148,17 @@ class ChatFragment : Fragment(),RegisterContactListAdapter.OnItemClickListener {
         val currentUser = viewmodel.currentUser
         binding.apply {
 
-            if(currentUser?.photoUrl != null){
+            if (currentUser?.photoUrl != null) {
                 Glide
                     .with(requireContext())
                     .load(currentUser?.photoUrl)
                     .placeholder(R.drawable.profile)
                     .into(profileImage)
 
-                name.text= currentUser?.displayName
-            }else{
+                name.text = currentUser?.displayName
+            } else {
                 profileImage.setImageResource(R.drawable.profile)
-                name.text=currentUser?.displayName
+                name.text = currentUser?.displayName
             }
         }
     }
@@ -149,44 +166,50 @@ class ChatFragment : Fragment(),RegisterContactListAdapter.OnItemClickListener {
     override fun onResume() {
         super.onResume()
         showBottomNavigation()
-    }
 
-    override fun onItemClick(recentUser: UserProfile) {
-        val action = ChatFragmentDirections.actionChatFragmentToChatRoomFragment(recentUser)
-        findNavController().navigate(action)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-       lifecycleScope.launchWhenStarted {
-           recentViewmodel.chatFragmentrepoState.collectLatest {
-               when(it){
-                   is Resources.Error ->{
-                       binding.progressabr.visibility=View.GONE
-                       Toast.makeText(requireContext(),it.toString(),Toast.LENGTH_SHORT).show()
-                   }
-                   is Resources.Loading -> {
-                       binding.progressabr.visibility=View.VISIBLE
-                       Toast.makeText(requireContext(),"Loading",Toast.LENGTH_SHORT).show()
-                   }
-                   is Resources.Success ->{
-                       val data = it.data
-                       registerContactListAdapter.asyncListDiffer.submitList(data)
-                       Log.d("recent",data.toString())
-                       binding.progressabr.visibility=View.GONE
-                   }
-                   else ->Unit
-               }
-           }
-       }
+        lifecycleScope.launchWhenStarted {
+            recentChatViewmodel.recentChatState.collectLatest {
+                when (it) {
+                    is Resources.Error -> {
+                        binding.progressabr.visibility = View.GONE
+                        Toast.makeText(requireContext(), it.message.toString(), Toast.LENGTH_SHORT)
+                            .show()
+                    }
+
+                    is Resources.Loading -> {
+                        binding.progressabr.visibility = View.VISIBLE
+                    }
+
+                    is Resources.Success -> {
+                        binding.progressabr.visibility = View.GONE
+
+                        val options = it.data
+                        if (options != null) {
+                            setupRecentChatRecyclerView(options)
+                        }
+
+
+                    }
+
+                    else -> Unit
+                }
+            }
+        }
+    }
+
+    override fun onItemClick(registerUser: UserProfile) {
+        val action =ChatFragmentDirections.actionChatFragmentToChatRoomFragment(userProfile = registerUser)
+        findNavController().navigate(action)
     }
 
 
-    fun recyclerview(){
-        binding.apply {
-            recyclerviewRecentChat.layoutManager=LinearLayoutManager(requireContext(),LinearLayoutManager.VERTICAL,false)
-            recyclerviewRecentChat.adapter=registerContactListAdapter
-        }
+    override fun onStop() {
+        super.onStop()
+        recentChatAdapter.stopListening()
     }
 }
