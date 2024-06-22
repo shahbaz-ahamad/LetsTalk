@@ -32,6 +32,7 @@ import com.shahbaz.letstalk.viewmodel.AuthViewmodel
 import com.shahbaz.letstalk.viewmodel.ChatFragmetViewmodel
 import com.shahbaz.letstalk.viewmodel.ChatViewmodel
 import com.shahbaz.letstalk.viewmodel.ContactViewmodel
+import com.shahbaz.letstalk.viewmodel.UserProfileViewmodel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import javax.inject.Inject
@@ -42,6 +43,7 @@ class ChatFragment : Fragment(),RecentChatAdapter.OnItemClickListener {
     private lateinit var binding: FragmentChatBinding
     private val READ_CONTACTS_PERMISSION_REQUEST = 101
     private val viewmodel by viewModels<AuthViewmodel>()
+    private val userProfileViewmodel by viewModels<UserProfileViewmodel>()
     @Inject
     lateinit var firebaseUtils: FirebasseUtils
     private val recentChatViewmodel by viewModels<ChatFragmetViewmodel>()
@@ -59,14 +61,40 @@ class ChatFragment : Fragment(),RecentChatAdapter.OnItemClickListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         recentChatViewmodel.recentChat()
-
         displayUserInfo()
         binding.addChat.setOnClickListener {
             requestContactsPermission()
         }
 
+
+
+        lifecycleScope.launchWhenStarted {
+            recentChatViewmodel.recentChatState.collectLatest {
+                when (it) {
+                    is Resources.Error -> {
+                        binding.progressabr.visibility = View.GONE
+                        Toast.makeText(requireContext(), it.message.toString(), Toast.LENGTH_SHORT)
+                            .show()
+                    }
+
+                    is Resources.Loading -> {
+                        binding.progressabr.visibility = View.VISIBLE
+                    }
+                    is Resources.Success -> {
+                        binding.progressabr.visibility = View.GONE
+                        val options = it.data
+                        if (options != null) {
+                            setupRecentChatRecyclerView(options)
+                            recentChatAdapter.startListening()
+                        }
+                        recentChatAdapter.notifyDataSetChanged()
+                    }
+
+                    else -> Unit
+                }
+            }
+        }
     }
 
     private fun setupRecentChatRecyclerView(options: FirestoreRecyclerOptions<ChatRoomModel>) {
@@ -76,6 +104,7 @@ class ChatFragment : Fragment(),RecentChatAdapter.OnItemClickListener {
                 LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
             adapter = recentChatAdapter
             recentChatAdapter.startListening()
+
         }
     }
 
@@ -172,34 +201,6 @@ class ChatFragment : Fragment(),RecentChatAdapter.OnItemClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        lifecycleScope.launchWhenStarted {
-            recentChatViewmodel.recentChatState.collectLatest {
-                when (it) {
-                    is Resources.Error -> {
-                        binding.progressabr.visibility = View.GONE
-                        Toast.makeText(requireContext(), it.message.toString(), Toast.LENGTH_SHORT)
-                            .show()
-                    }
-
-                    is Resources.Loading -> {
-                        binding.progressabr.visibility = View.VISIBLE
-                    }
-
-                    is Resources.Success -> {
-                        binding.progressabr.visibility = View.GONE
-
-                        val options = it.data
-                        if (options != null) {
-                            setupRecentChatRecyclerView(options)
-                        }
-
-
-                    }
-
-                    else -> Unit
-                }
-            }
-        }
     }
 
     override fun onItemClick(registerUser: UserProfile) {
@@ -207,9 +208,9 @@ class ChatFragment : Fragment(),RecentChatAdapter.OnItemClickListener {
         findNavController().navigate(action)
     }
 
-
     override fun onStop() {
         super.onStop()
         recentChatAdapter.stopListening()
     }
+
 }

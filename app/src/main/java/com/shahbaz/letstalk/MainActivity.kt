@@ -19,6 +19,9 @@ import com.shahbaz.letstalk.viewmodel.AuthViewmodel
 import com.shahbaz.letstalk.viewmodel.FirbaseMessagingViewmodel
 import com.shahbaz.letstalk.viewmodel.UserProfileViewmodel
 import dagger.hilt.android.AndroidEntryPoint
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.system.exitProcess
 
 @AndroidEntryPoint
@@ -37,20 +40,7 @@ class MainActivity : AppCompatActivity() {
         setupBottomNavigationView()
 
         //for the userStauts like online or not
-        profileViewmodel.ChangeUserStatus(true)
-
-
-
-        //for the notification
-
-        FirebaseMessaging.getInstance().token.addOnCompleteListener {
-            if(it.isSuccessful){
-                Log.d("token",it.result)
-            }
-            val currentUser=viewmodel.currentUser?.uid.toString()
-            viewmodel.updateToken(currentUser,it.result)
-        }
-
+        profileViewmodel.ChangeUserStatus("Online")
 
     }
 
@@ -64,12 +54,18 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        profileViewmodel.ChangeUserStatus(false)
+        // Get the current time in milliseconds
+        val currentTimeMillis = System.currentTimeMillis()
+        // Convert the current time to a readable date and time format
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        val lastSeenDateTime = dateFormat.format(Date(currentTimeMillis))
+        // Update user status with the current time and date
+        profileViewmodel.ChangeUserStatus("Last Seen $lastSeenDateTime")
     }
 
     override fun onResume() {
         super.onResume()
-        profileViewmodel.ChangeUserStatus(true)
+        profileViewmodel.ChangeUserStatus("Online")
     }
 
 }

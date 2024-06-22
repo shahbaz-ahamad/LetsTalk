@@ -17,13 +17,13 @@ class UserProfileViewmodel @Inject constructor(
 ) :ViewModel() {
 
     val profileUpdateState : Flow<UserProfileSetupState> =profileRepo.userUpdateStatus
-    val userOnlineStatus : Flow<Resources<Boolean>> =profileRepo.userOnlineStatus
+    val userOnlineStatus : Flow<Resources<String>> =profileRepo.userOnlineStatus
 
     fun addDataToDatabase(name:String , imageUri: Uri?){
         profileRepo.AddUserDataToFirebase(name,imageUri)
     }
 
-    fun ChangeUserStatus(status:Boolean){
+    fun ChangeUserStatus(status:String){
         profileRepo.ChangeUserStatus(status)
     }
 

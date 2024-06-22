@@ -2,6 +2,8 @@ package com.shahbaz.letstalk.fragment
 
 import MessageAdapter
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -32,7 +34,6 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class ChatRoomFragment : Fragment() {
-
     private lateinit var binding: FragmentChatRoomBinding
     private val args by navArgs<ChatRoomFragmentArgs>()
     private lateinit var user: UserProfile
@@ -83,23 +84,44 @@ class ChatRoomFragment : Fragment() {
         }
         setupRecyclerView()
 
+        //set the status to typing
+        binding.messageBox.addTextChangedListener(object :TextWatcher{
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+                if(s.toString().trim().length == 0){
+                    profileViewmodel.ChangeUserStatus("Online")
+                }else{
+                    profileViewmodel.ChangeUserStatus("Typing...")
+                }
+            }
 
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                profileViewmodel.ChangeUserStatus("Typing...")
+            }
+            override fun afterTextChanged(s: Editable?) {
+                if(s.toString().trim().length == 0){
+                    profileViewmodel.ChangeUserStatus("Online")
+                }
+            }
+
+        })
         lifecycleScope.launchWhenStarted {
             profileViewmodel.userOnlineStatus.collectLatest {
                 when(it){
                     is Resources.Error -> {
 
-
                     }
                     is Resources.Loading -> {
 
-
                     }
                     is Resources.Success -> {
-                        if(it.data == true){
+                        if(it.data == "Online"){
                             binding.status.text="Online"
-                        }else{
-                            binding.status.text="Last Seen Moment Ago"
+                        }
+                        else if(it.data == "Typing..."){
+                            binding.status.text="Typing..."
+                        }
+                        else{
+                            binding.status.text=it.data
                         }
                     }
                     else -> Unit
@@ -121,10 +143,8 @@ class ChatRoomFragment : Fragment() {
             } else {
                 name.text = user.userName
             }
-
         }
     }
-
     private fun setupRecyclerView() {
         binding.recyclerViewMsg.layoutManager = LinearLayoutManager(
             requireContext(),
@@ -142,14 +162,10 @@ class ChatRoomFragment : Fragment() {
         })
     }
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         user = args.userProfile
-
         profileViewmodel.FetchUserOnlineStatus(user.userId)
-
-
     }
 }
 

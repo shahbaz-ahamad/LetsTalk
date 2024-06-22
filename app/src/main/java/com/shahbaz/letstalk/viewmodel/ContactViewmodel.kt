@@ -24,11 +24,7 @@ class ContactViewmodel @Inject constructor(
     }
 
     fun FetchRegisterUser(contactList : MutableMap<String,String>){
-        contactRepositiory.fetchRegisterUserAndInserItToRoomDatabase(contactList)
-    }
-
-    fun FetchRegisterUserFromRooDatabase(){
-        contactRepositiory.fetchUserFromRoomDatabase()
+        contactRepositiory.fetchRegisterUser(contactList)
     }
 
     val currentUser = contactRepositiory.currentUser

@@ -122,6 +122,9 @@ dependencies {
     //for the recycleroption of the firstore
     implementation ("com.firebaseui:firebase-ui-firestore:7.2.0")
 
+    //for the message reaction
+    implementation ("com.github.pgreze:android-reactions:1.6")
+
 }
 
 

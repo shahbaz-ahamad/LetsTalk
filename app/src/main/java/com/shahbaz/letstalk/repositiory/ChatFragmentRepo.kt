@@ -23,8 +23,9 @@ class ChatFragmentRepo @Inject constructor(
 
 
     fun fetchRecentChat(){
+        _recentuserSate.value=Resources.Loading()
         try {
-            _recentuserSate.value=Resources.Loading()
+
             val query = firebasseUtils.currentUserId()?.let {currentUserId ->
                 firebasseUtils.allChatroomCollectionReference()
                     .whereArrayContains("userId", currentUserId)

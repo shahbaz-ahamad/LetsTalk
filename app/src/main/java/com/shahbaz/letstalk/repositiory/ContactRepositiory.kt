@@ -13,13 +13,10 @@ import com.google.firebase.database.ValueEventListener
 import com.shahbaz.letstalk.datamodel.ChatRoomModel
 import com.shahbaz.letstalk.datamodel.UnregisteredUser
 import com.shahbaz.letstalk.datamodel.UserProfile
-import com.shahbaz.letstalk.fragment.ContactFragment
 import com.shahbaz.letstalk.helper.FirebasseUtils
-import com.shahbaz.letstalk.room.RoomDao
 import com.shahbaz.letstalk.sealedclass.Resources
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -29,7 +26,7 @@ import javax.inject.Inject
 class ContactRepositiory @Inject constructor(
     private val firebaseDatabase: FirebaseDatabase,
     @ApplicationContext private val context: Context,
-    private val roomDao: RoomDao,
+//    private val roomDao: RoomDao,
     private val firebaseAuth: FirebaseAuth,
     private val firebasseUtils: FirebasseUtils
 ) {
@@ -72,7 +69,7 @@ class ContactRepositiory @Inject constructor(
         return contactList
     }
 
-    fun fetchRegisterUserAndInserItToRoomDatabase(contactList: MutableMap<String, String>) {
+    fun fetchRegisterUser(contactList: MutableMap<String, String>) {
         unRegisteredContact = mutableListOf<UnregisteredUser>()
         _registerContactsState.value = Resources.Loading()
         val userList = mutableListOf<UserProfile>()
@@ -88,9 +85,6 @@ class ContactRepositiory @Inject constructor(
                         userList.add(user)
                     }
                     if (userList.isNotEmpty()) {
-                        CoroutineScope(Dispatchers.IO).launch {
-                            roomDao.insertUserProfile(userList)
-                        }
                         _registerContactsState.value = Resources.Success(userList)
                     } else {
                         unRegisteredContact.add(UnregisteredUser(name, phoneNumber))
@@ -102,20 +96,4 @@ class ContactRepositiory @Inject constructor(
                 }
         }
     }
-
-    fun fetchUserFromRoomDatabase() {
-        _registerContactsStateFromRoomDatabase.value = Resources.Loading()
-        CoroutineScope(Dispatchers.IO).launch {
-            val result = roomDao.getRegisterUserProfile()
-            if (result.isNotEmpty()) {
-                _registerContactsStateFromRoomDatabase.value = Resources.Success(result)
-            } else {
-                _registerContactsStateFromRoomDatabase.value =
-                    Resources.Error("Failed to fetch data")
-            }
-        }
-    }
-
-
-
 }

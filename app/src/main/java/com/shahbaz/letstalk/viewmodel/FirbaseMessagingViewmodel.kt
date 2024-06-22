@@ -13,10 +13,5 @@ class FirbaseMessagingViewmodel @Inject constructor(
 ):ViewModel() {
 
 
-    val currentUser= firebaseMessagingRepo.currentUser
-    fun updateToken(userId:String,token:String){
-        viewModelScope.launch {
-            firebaseMessagingRepo.updateToken(userId,token)
-        }
-    }
+
 }

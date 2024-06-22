@@ -53,15 +53,12 @@ class ContactFragment : Fragment(),RegisterContactListAdapter.OnItemClickListene
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         hideBottomNavigation()
-        viewmodel.FetchRegisterUserFromRooDatabase()
-        //viewmodel.FetchUnregisterContactFromRoomDatabase()
-
         val contact = viewmodel.FetchContact()
 
         if(CheckInternet.isInternetAvailable(requireContext())){
             viewmodel.FetchRegisterUser(contact)
         }else{
-           viewmodel.FetchRegisterUserFromRooDatabase()
+           Toast.makeText(requireContext(),"Connect to Internet",Toast.LENGTH_SHORT).show()
         }
 
         SetupRecyclerView()
@@ -73,11 +70,9 @@ class ContactFragment : Fragment(),RegisterContactListAdapter.OnItemClickListene
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-
         lifecycleScope.launchWhenStarted {
             viewmodel.registerContactsState.collectLatest {
                 when(it){
-
                     is Resources.Loading ->{
                         binding.progressBar.visibility=View.VISIBLE
                     }
@@ -111,22 +106,7 @@ class ContactFragment : Fragment(),RegisterContactListAdapter.OnItemClickListene
             }
         }
 
-        //observe roomdatabaseContact
-        lifecycleScope.launchWhenStarted {
-            viewmodel.registerContactsFromRoomState.collectLatest {
-                when(it){
-                    is Resources.Loading ->{
-                    }
-                    is Resources.Success ->{
-                        val registerContact = it.data
-                        registerContactListAdapter.asyncListDiffer.submitList(registerContact)
-                    }
-                    is Resources.Error ->{
-                        Toast.makeText(requireContext(),"Failed to Fetch  Contact",Toast.LENGTH_SHORT).show()
-                    }else ->Unit
-                }
-            }
-        }
+
     }
 
 

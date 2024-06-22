@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.userProfileChangeRequest
 import com.google.firebase.database.FirebaseDatabase
@@ -31,7 +32,7 @@ class ProfileRepo @Inject constructor(
 
 
 
-    private val _userOnlineStatus =MutableStateFlow<Resources<Boolean>>(Resources.Unspecified())
+    private val _userOnlineStatus =MutableStateFlow<Resources<String>>(Resources.Unspecified())
     val userOnlineStatus =_userOnlineStatus.asStateFlow()
 
     val currentUser
@@ -64,7 +65,7 @@ class ProfileRepo @Inject constructor(
                                             id,
                                             name,
                                             imageUrl.toString(),
-                                            currentUser!!.phoneNumber.toString()
+                                            currentUser!!.phoneNumber.toString(),
                                         )
                                        // AddUserToRealtimeDatabase(userProfile)
                                         AddUserToFirestore(userProfile)
@@ -129,7 +130,7 @@ class ProfileRepo @Inject constructor(
     }
 
 
-    fun ChangeUserStatus(status:Boolean){
+    fun ChangeUserStatus(status:String){
         val userStatus = hashMapOf<String,Any>(
             "recent" to status
         )
@@ -155,8 +156,8 @@ class ProfileRepo @Inject constructor(
                 }
 
                 if (snapshot != null && snapshot.exists()) {
-                    val result = snapshot.getBoolean("recent")
-                    _userOnlineStatus.value = Resources.Success(result ?: false)
+                    val result = snapshot.getString("recent")
+                    _userOnlineStatus.value = Resources.Success(result.toString())
                 } else {
                     _userOnlineStatus.value = Resources.Error("User document doesn't exist")
                 }

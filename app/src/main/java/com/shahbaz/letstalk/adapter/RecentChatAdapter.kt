@@ -1,12 +1,14 @@
 package com.shahbaz.letstalk.adapter
 
 import android.content.Context
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter
 import com.firebase.ui.firestore.FirestoreRecyclerOptions
+import com.google.firebase.firestore.ListenerRegistration
 import com.shahbaz.letstalk.R
 import com.shahbaz.letstalk.databinding.RecentChatBinding
 import com.shahbaz.letstalk.datamodel.ChatRoomModel
@@ -14,6 +16,7 @@ import com.shahbaz.letstalk.datamodel.UserProfile
 import com.shahbaz.letstalk.helper.FirebasseUtils
 import java.text.DateFormat
 import java.text.SimpleDateFormat
+import java.util.Locale
 
 
 class RecentChatAdapter(
@@ -23,6 +26,7 @@ class RecentChatAdapter(
     val clickListner:OnItemClickListener
 ) :
     FirestoreRecyclerAdapter<ChatRoomModel, RecentChatAdapter.RecentChatViewmodel>(options) {
+
     class RecentChatViewmodel(val binding: RecentChatBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
@@ -46,31 +50,45 @@ class RecentChatAdapter(
     ) {
 
         val isLastMessageSentByMe = model.lastMessageSenderId.equals(firebasseUtils.currentUserId())
+
         firebasseUtils.getOtherUserFromChatRoom(model.userId)
             .get()
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     val usermodel = task.result.toObject(UserProfile::class.java)
                     holder.binding.name.text = usermodel?.userName
-
                     if (usermodel?.userProfileImage != "") {
                         Glide.with(context1)
                             .load(usermodel?.userProfileImage)
                             .placeholder(R.drawable.profile)
                             .into(holder.binding.profileImage)
-
                     } else {
                         holder.binding.profileImage.setImageResource(R.drawable.profile)
                     }
 
-                    if(isLastMessageSentByMe){
-                        holder.binding.taptoChart.text="You:"+model.lastMessage
-                    }else{
-                        holder.binding.taptoChart.text="In:"+model.lastMessage
 
+                    if(usermodel?.recent == "Typing..."){
+                        holder.binding.taptoChart.text = usermodel?.recent
+                    }else{
+                        if(isLastMessageSentByMe){
+                            holder.binding.taptoChart.text="You:"+model.lastMessage
+                        }else{
+                            holder.binding.taptoChart.text="In:"+model.lastMessage
+
+                        }
                     }
 
-                    holder.binding.lastMessageTime.text=SimpleDateFormat("HH:MM").format(model.lastMessagetimeStamp.toDate())
+                    val timestamp = model.lastMessagetimeStamp
+                    if (timestamp != null) {
+                        val date = timestamp.toDate()
+                        val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+                        val timeString = timeFormat.format(date)
+                        holder.binding.lastMessageTime.text = timeString
+                    } else {
+                        Log.e("ChatRoomAdapter", "lastMessagetimeStamp is null")
+                    }
+
+
                     holder.itemView.setOnClickListener {
                         clickListner.onItemClick(usermodel!!)
                     }
@@ -79,11 +97,12 @@ class RecentChatAdapter(
 
             }
 
-
     }
 
 
     interface OnItemClickListener{
         fun onItemClick(registerUser: UserProfile)
     }
+
+
 }

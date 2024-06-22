@@ -9,8 +9,6 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import com.shahbaz.letstalk.helper.FirebasseUtils
-import com.shahbaz.letstalk.room.RoomDao
-import com.shahbaz.letstalk.room.RoomDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -57,23 +55,23 @@ object AppModule {
     }
 
     //for the room databse instance
-    @Singleton
-    @Provides
-    fun provideRoomDatabase(@ApplicationContext applicationContext: Context): RoomDatabase {
-        return Room.databaseBuilder(
-            applicationContext,
-            RoomDatabase::class.java,
-            "UserDatabase"
-        )
-            .build()
-    }
+//    @Singleton
+//    @Provides
+//    fun provideRoomDatabase(@ApplicationContext applicationContext: Context): RoomDatabase {
+//        return Room.databaseBuilder(
+//            applicationContext,
+//            RoomDatabase::class.java,
+//            "UserDatabase"
+//        )
+//            .build()
+//    }
 
 
-    //provide the instance of the dao
-    @Provides
-    fun provideDao(database: RoomDatabase): RoomDao {
-        return database.getDao()
-    }
+//    //provide the instance of the dao
+//    @Provides
+//    fun provideDao(database: RoomDatabase): RoomDao {
+//        return database.getDao()
+//    }
 
 }
 
