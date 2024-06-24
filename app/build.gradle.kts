@@ -119,7 +119,7 @@ dependencies {
     //for the notifcation
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
-    //for the recycleroption of the firstore
+    //for the recycle option of the firstore
     implementation ("com.firebaseui:firebase-ui-firestore:7.2.0")
 
     //for the message reaction

@@ -8,6 +8,8 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import com.shahbaz.letstalk.databinding.ActivityLoginBinding
+import com.shahbaz.letstalk.datamodel.UserProfile
+import com.shahbaz.letstalk.fragment.ChatFragmentDirections
 import com.shahbaz.letstalk.viewmodel.AuthViewmodel
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -30,6 +32,7 @@ class LoginActivity : AppCompatActivity() {
             startActivity(Intent(this,MainActivity::class.java))
             finish()
         }
+
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -43,4 +46,7 @@ class LoginActivity : AppCompatActivity() {
         val navHostFragment=supportFragmentManager.findFragmentById(R.id.fragmentContainerView) as NavHostFragment
         navController=navHostFragment.navController
     }
+
+
+
 }

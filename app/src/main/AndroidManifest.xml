@@ -12,6 +12,9 @@
 
     <uses-permission android:name="android.permission.READ_CONTACTS" />
 
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
+
     <application
         android:name=".di.App"
         android:allowBackup="true"
@@ -44,10 +47,10 @@
             android:theme="@style/StatusBarMainActivity"
             android:windowSoftInputMode="adjustResize" />
 
-
         <service
-            android:name=".firebasemessaging.FirebaseMessagingService"
-            android:exported="true">
+            android:name=".notification.FirebaseMessagingService"
+            android:exported="true"
+            android:enabled="true">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT"/>
             </intent-filter>

@@ -5,23 +5,20 @@ import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.toObject
 import com.shahbaz.letstalk.datamodel.ChatRoomModel
 import com.shahbaz.letstalk.datamodel.MessageModel
 import com.shahbaz.letstalk.datamodel.UserProfile
 import com.shahbaz.letstalk.helper.FirebasseUtils
-import okhttp3.Call
-import okhttp3.Callback
-import okhttp3.MediaType
-import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
-import okhttp3.Response
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import java.io.IOException
-import java.util.Arrays
 import javax.inject.Inject
+import com.shahbaz.letstalk.helper.Constant
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 
 class ChatRepo @Inject constructor(
@@ -34,9 +31,9 @@ class ChatRepo @Inject constructor(
     fun getOrCreateChatRoom(chatRoomId: String, userProfile: UserProfile) {
         firebasseUtils.getChatRoomReference(chatRoomId).get()
             .addOnCompleteListener { task ->
-                if (task.isSuccessful){
+                if (task.isSuccessful) {
                     val result = task.result.toObject(ChatRoomModel::class.java)
-                    if(result == null){
+                    if (result == null) {
                         chatRoomModel = ChatRoomModel(
                             chatRoomId,
                             listOf(currentUser?.uid.toString(), userProfile.userId),
@@ -50,10 +47,10 @@ class ChatRepo @Inject constructor(
             }
     }
 
-    fun sendMessage(chatRoomId: String, message: String) {
+    fun sendMessage(chatRoomId: String, message: String, token: String) {
         chatRoomModel.lastMessagetimeStamp = Timestamp.now()
         chatRoomModel.lastMessageSenderId = firebasseUtils.currentUserId().toString()
-        chatRoomModel.lastMessage=message
+        chatRoomModel.lastMessage = message
         val messageModel =
             firebasseUtils.currentUserId()
                 ?.let { MessageModel(it, message, Timestamp.now(), false) }
@@ -71,14 +68,42 @@ class ChatRepo @Inject constructor(
                     firebasseUtils.getChatRoomMessageReference(chatRoomId)
                         .add(messageModel)
                         .addOnCompleteListener {
-                            Log.d("Message", "Message Stored")
+                            Log.d("Message", "Message Sent")
+                            CoroutineScope(Dispatchers.IO).launch {
+                                sendNotification(message,token)
+                            }
                         }
                 }
             }.addOnFailureListener {
                 Log.d("Error", "Failed to update Chatroom")
             }
+    }
 
+    private fun sendNotification(message: String,receiverToken:String) {
+        val json = JSONObject()
+        val dataJson = JSONObject()
+        dataJson.put(
+            "title",firebasseUtils.currentUserUsername()
+        )
+        dataJson.put("body", message)
+        json.put("to", receiverToken)
+        json.put("notification", dataJson)
+        json.put("userId",firebasseUtils.currentUserId())
 
+        val body =
+            json.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
+
+        val request = Request.Builder()
+            .url("https://fcm.googleapis.com/fcm/send")
+            .post(body)
+            .addHeader(
+                "Authorization",
+                "key=${Constant.SERVER_KEY}"
+            ) // Replace YOUR_SERVER_KEY with your actual server key from Firebase Console
+            .addHeader("Content-Type", "application/json")
+            .build()
+        val client = OkHttpClient()
+        client.newCall(request).execute()
     }
 
     fun getMessageOptions(chatRoomId: String): FirestoreRecyclerOptions<MessageModel> {

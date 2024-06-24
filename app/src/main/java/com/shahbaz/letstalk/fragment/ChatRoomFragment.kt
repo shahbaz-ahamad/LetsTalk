@@ -4,14 +4,12 @@ import MessageAdapter
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
@@ -20,7 +18,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.shahbaz.letstalk.R
 import com.shahbaz.letstalk.databinding.FragmentChatRoomBinding
-import com.shahbaz.letstalk.datamodel.MessageModel
 import com.shahbaz.letstalk.datamodel.UserProfile
 import com.shahbaz.letstalk.helper.FirebasseUtils
 import com.shahbaz.letstalk.helper.hideBottomNavigation
@@ -74,7 +71,7 @@ class ChatRoomFragment : Fragment() {
             binding.apply {
                 if (messageBox.text.isNotEmpty()) {
                     val message = messageBox.text.toString()
-                    viewModel.sendMessage(chatRoomId,message)
+                    viewModel.sendMessage(chatRoomId,message,user.token)
                     messageBox.text.clear()
                 } else {
                     Toast.makeText(requireContext(), "Can't Send Empty Message", Toast.LENGTH_SHORT)

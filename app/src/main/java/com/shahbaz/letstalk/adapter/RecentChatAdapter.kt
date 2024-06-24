@@ -71,9 +71,11 @@ class RecentChatAdapter(
                         holder.binding.taptoChart.text = usermodel?.recent
                     }else{
                         if(isLastMessageSentByMe){
-                            holder.binding.taptoChart.text="You:"+model.lastMessage
+                            holder.binding.sendOrReceived.setImageResource(R.drawable.sent)
+                            holder.binding.taptoChart.text=model.lastMessage
                         }else{
-                            holder.binding.taptoChart.text="In:"+model.lastMessage
+                            holder.binding.sendOrReceived.setImageResource(R.drawable.received)
+                            holder.binding.taptoChart.text=model.lastMessage
 
                         }
                     }

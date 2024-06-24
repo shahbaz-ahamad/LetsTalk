@@ -14,6 +14,10 @@ class FirebasseUtils @Inject constructor(
     fun currentUserId():String?{
         return firbaseAuth.currentUser?.uid
     }
+
+    fun currentUserUsername():String?{
+        return firbaseAuth.currentUser?.displayName
+    }
     fun currentUserDetails():DocumentReference?{
         return currentUserId()?.let { firestore.collection("User").document(it) }
     }
